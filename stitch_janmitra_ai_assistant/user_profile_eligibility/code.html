@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Profile - JanMitra AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-container": "#1e3a8a",
+                    "outline-variant": "#c5c5d3",
+                    "secondary-container": "#6cf8bb",
+                    "on-tertiary-container": "#ff8f4f",
+                    "on-primary-fixed": "#00164e",
+                    "tertiary-fixed-dim": "#ffb690",
+                    "surface-tint": "#4059aa",
+                    "surface-container-high": "#dee9fc",
+                    "on-surface": "#121c2a",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#6e2d00",
+                    "on-primary": "#ffffff",
+                    "on-background": "#121c2a",
+                    "surface-container-low": "#eff4ff",
+                    "on-primary-container": "#90a8ff",
+                    "on-tertiary-fixed-variant": "#783200",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-secondary-fixed-variant": "#005236",
+                    "error-container": "#ffdad6",
+                    "surface-variant": "#d9e3f6",
+                    "surface": "#f8f9ff",
+                    "surface-container-highest": "#d9e3f6",
+                    "surface-bright": "#f8f9ff",
+                    "on-tertiary": "#ffffff",
+                    "secondary": "#006c49",
+                    "on-secondary": "#ffffff",
+                    "primary": "#00236f",
+                    "surface-dim": "#d0dbed",
+                    "on-secondary-fixed": "#002113",
+                    "background": "#f8f9ff",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-tertiary-fixed": "#341100",
+                    "on-secondary-container": "#00714d",
+                    "on-surface-variant": "#444651",
+                    "secondary-fixed": "#6ffbbe",
+                    "inverse-primary": "#b6c4ff",
+                    "outline": "#757682",
+                    "tertiary": "#4b1c00",
+                    "error": "#ba1a1a",
+                    "surface-container": "#e6eeff",
+                    "inverse-surface": "#27313f",
+                    "primary-fixed": "#dce1ff",
+                    "tertiary-fixed": "#ffdbca",
+                    "on-error-container": "#93000a",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed-variant": "#264191",
+                    "secondary-fixed-dim": "#4edea3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "16px",
+                    "base": "4px",
+                    "gutter": "24px",
+                    "lg": "40px",
+                    "container-max": "1120px",
+                    "xs": "8px",
+                    "xl": "64px",
+                    "md": "24px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Manrope"],
+                    "body-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-lg": ["Manrope"],
+                    "label-sm": ["Inter"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "headline-xl": ["Manrope"],
+                    "label-md": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        .input-field {
+            @apply w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-fixed-dim transition-all duration-200;
+        }
+        .label-text {
+            @apply block font-label-md text-on-surface-variant mb-xs;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="bg-surface border-b border-outline-variant docked full-width top-0 z-50">
+<div class="flex justify-between items-center w-full px-gutter max-w-container-max mx-auto h-16">
+<div class="flex items-center space-x-lg">
+<div class="font-headline-md text-headline-md font-bold text-primary">JanMitra AI</div>
+<nav class="hidden md:flex space-x-gutter">
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body-md text-body-md py-4" href="#">Explore Schemes</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body-md text-body-md py-4" href="#">About</a>
+</nav>
+</div>
+<div class="flex items-center space-x-md">
+<button class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors scale-95 active:scale-90">Login</button>
+</div>
+</div>
+</header>
+<div class="flex flex-1 max-w-container-max w-full mx-auto relative pt-lg pb-xl px-gutter md:px-lg">
+<!-- Main Content Canvas -->
+<main class="w-full max-w-2xl mx-auto flex flex-col items-center">
+<!-- Header Section -->
+<div class="text-center mb-xl w-full">
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-xs hidden md:block">Complete Your Profile</h1>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-xs md:hidden">Complete Your Profile</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Help us find the most relevant government schemes for you.</p>
+</div>
+<!-- Progress Indicator -->
+<div class="w-full mb-lg">
+<div class="flex justify-between items-center mb-xs">
+<span class="font-label-md text-label-md text-on-surface">Profile Completion</span>
+<span class="font-label-md text-label-md text-primary">25%</span>
+</div>
+<div class="h-2 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-500 ease-in-out" style="width: 25%;"></div>
+</div>
+</div>
+<!-- Profile Form Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg w-full shadow-sm">
+<form class="space-y-gutter">
+<!-- Grid for 2 column layout on desktop -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- State -->
+<div>
+<label class="label-text">State of Residence</label>
+<div class="relative">
+<select class="input-field appearance-none cursor-pointer">
+<option disabled="" selected="" value="">Select your state</option>
+<option value="maharashtra">Maharashtra</option>
+<option value="karnataka">Karnataka</option>
+<option value="delhi">Delhi</option>
+<!-- Add more states -->
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Age -->
+<div>
+<label class="label-text">Age</label>
+<input class="input-field" max="100" min="18" placeholder="e.g. 35" type="number"/>
+</div>
+<!-- Gender -->
+<div>
+<label class="label-text">Gender</label>
+<div class="relative">
+<select class="input-field appearance-none cursor-pointer">
+<option disabled="" selected="" value="">Select gender</option>
+<option value="male">Male</option>
+<option value="female">Female</option>
+<option value="other">Other</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Category -->
+<div>
+<label class="label-text">Category</label>
+<div class="relative">
+<select class="input-field appearance-none cursor-pointer">
+<option disabled="" selected="" value="">Select category</option>
+<option value="general">General</option>
+<option value="obc">OBC</option>
+<option value="sc">SC</option>
+<option value="st">ST</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Full width fields -->
+<!-- Occupation -->
+<div>
+<label class="label-text">Occupation / Profession</label>
+<div class="relative">
+<select class="input-field appearance-none cursor-pointer">
+<option disabled="" selected="" value="">Select occupation</option>
+<option value="farmer">Farmer / Agriculture</option>
+<option value="student">Student</option>
+<option value="business">Business / Self-Employed</option>
+<option value="salaried">Salaried Employee</option>
+<option value="unemployed">Unemployed</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Annual Income -->
+<div>
+<label class="label-text">Annual Household Income (₹)</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-md">₹</span>
+<input class="input-field pl-10" placeholder="e.g. 250000" type="number"/>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-2">Used to determine eligibility for financial assistance schemes.</p>
+</div>
+<!-- Education Level -->
+<div>
+<label class="label-text">Highest Education Level</label>
+<div class="relative">
+<select class="input-field appearance-none cursor-pointer">
+<option disabled="" selected="" value="">Select education</option>
+<option value="none">No Formal Education</option>
+<option value="primary">Primary School</option>
+<option value="secondary">Secondary (10th)</option>
+<option value="higher_secondary">Higher Secondary (12th)</option>
+<option value="graduate">Graduate &amp; Above</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Submit Action -->
+<div class="pt-sm border-t border-outline-variant mt-lg flex justify-end">
+<button class="bg-primary text-on-primary font-label-md text-label-md px-8 py-3 rounded-lg hover:bg-surface-tint transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-primary shadow-sm flex items-center" type="button">
+                            Save Profile
+                            <span class="material-symbols-outlined ml-2 text-[18px]">arrow_forward</span>
+</button>
+</div>
+</form>
+</div>
+<!-- Illustration area for visual balance -->
+<div class="w-full mt-xl flex justify-center opacity-80 pointer-events-none hidden md:flex">
+<img class="h-48 object-contain" data-alt="A clean, modern 2D vector illustration in a minimalist style showing abstract demographic forms and interconnected dots representing data points. The illustration uses a color palette of deep blue, soft light blue, and crisp white, conveying a sense of secure, professional data processing in a modern administrative setting. The design is flat and elegant." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4oNLHBCccUxPrtFFhGdWSXHgzEEIYU2MqmYvNZv-M7AeAqVugXdivlVduRQY2cjCKuf9_ii6iyOVVUDCEPxUmIVcH5yZLATfrPQ5FNPJOw_CCdtnlrxrxVVUgas34cr4lRuDORPFW6eQpYV0B1s_fgJsg81CAr0FtwxxRYuV5Y7nbkLKkupkPeGoCKj5T7B9fmcILDYW4BLrXeN2tia4gHXTtX_buyoK8u4vF6R4gQdr7oURGD9RTD6UWO6QWu5zIkBGFDf0FsL4"/>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="bg-surface-container-highest w-full border-t border-outline-variant mt-auto">
+<div class="w-full py-xl px-gutter max-w-container-max mx-auto flex flex-col md:flex-row justify-between items-center space-y-md md:space-y-0">
+<div class="font-body-sm text-body-sm text-on-surface-variant">
+                © 2024 JanMitra AI. Government of India.
+            </div>
+<div class="flex space-x-md">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-opacity opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-opacity opacity-80 hover:opacity-100" href="#">Accessibility</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-opacity opacity-80 hover:opacity-100" href="#">Contact Us</a>
+</div>
+</div>
+</footer>
+</body></html>

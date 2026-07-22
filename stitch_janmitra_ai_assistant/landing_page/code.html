@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>JanMitra AI - Government Assistant</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with custom config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#1e3a8a",
+                        "outline-variant": "#c5c5d3",
+                        "secondary-container": "#6cf8bb",
+                        "on-tertiary-container": "#ff8f4f",
+                        "on-primary-fixed": "#00164e",
+                        "tertiary-fixed-dim": "#ffb690",
+                        "surface-tint": "#4059aa",
+                        "surface-container-high": "#dee9fc",
+                        "on-surface": "#121c2a",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#6e2d00",
+                        "on-primary": "#ffffff",
+                        "on-background": "#121c2a",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary-container": "#90a8ff",
+                        "on-tertiary-fixed-variant": "#783200",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-secondary-fixed-variant": "#005236",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#d9e3f6",
+                        "surface": "#f8f9ff",
+                        "surface-container-highest": "#d9e3f6",
+                        "surface-bright": "#f8f9ff",
+                        "on-tertiary": "#ffffff",
+                        "secondary": "#006c49",
+                        "on-secondary": "#ffffff",
+                        "primary": "#00236f",
+                        "surface-dim": "#d0dbed",
+                        "on-secondary-fixed": "#002113",
+                        "background": "#f8f9ff",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "on-tertiary-fixed": "#341100",
+                        "on-secondary-container": "#00714d",
+                        "on-surface-variant": "#444651",
+                        "secondary-fixed": "#6ffbbe",
+                        "inverse-primary": "#b6c4ff",
+                        "outline": "#757682",
+                        "tertiary": "#4b1c00",
+                        "error": "#ba1a1a",
+                        "surface-container": "#e6eeff",
+                        "inverse-surface": "#27313f",
+                        "primary-fixed": "#dce1ff",
+                        "tertiary-fixed": "#ffdbca",
+                        "on-error-container": "#93000a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#264191",
+                        "secondary-fixed-dim": "#4edea3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "16px",
+                        "base": "4px",
+                        "gutter": "24px",
+                        "lg": "40px",
+                        "container-max": "1120px",
+                        "xs": "8px",
+                        "xl": "64px",
+                        "md": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Manrope"],
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Manrope"],
+                        "headline-xl": ["Manrope"],
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline sticky top-0 z-50">
+<div class="flex justify-between items-center w-full px-gutter max-w-container-max mx-auto h-16">
+<!-- Brand -->
+<div class="flex items-center gap-xs cursor-pointer scale-95 active:scale-90 transition-transform">
+<img alt="JanMitra AI Logo" class="h-8 w-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBK66j0fKxhdws1-bStI3ejz5JV8gpKEzZ8yysuYPVzN8cGXssfygrTvq2XF70qIYx9_Vo9OKEmjmz4UPyFkc5eZqd6aJHJHXFUKP6bDgMTzCDgaUa1gA4Ipw3Xq0qRlendN9TrMiQqITyQSTLqttR3PLStFIZh6CwcrkyOt_NbMe8JbnblF1jHz60DJbPa_zQoJ042_baWcIZbKFdRSvsLpqbRJnPnIDORc2SCImJulGAt3IiJodf9t7ZdQbQpJB65vQTc7uRhMAY"/>
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">JanMitra AI</span>
+</div>
+<!-- Navigation Links (Desktop) -->
+<nav class="hidden md:flex items-center gap-gutter">
+<a class="text-on-surface-variant dark:text-surface-variant font-label-md text-label-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors py-2" href="#">Explore Schemes</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-label-md text-label-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors py-2" href="#">About</a>
+</nav>
+<!-- Trailing Action -->
+<div class="flex items-center gap-sm">
+<button class="font-label-md text-label-md text-primary bg-primary-container/10 hover:bg-primary-container/20 px-4 py-2 rounded-xl transition-colors scale-95 active:scale-90">Login</button>
+<!-- Mobile Menu Toggle -->
+<button class="md:hidden text-on-surface p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow w-full max-w-container-max mx-auto px-gutter py-xl flex flex-col gap-xl">
+<!-- Hero Section -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-xl items-center py-lg">
+<div class="flex flex-col gap-md max-w-2xl">
+<div class="inline-flex items-center gap-2 bg-surface-container-high px-3 py-1 rounded-full w-fit">
+<span class="material-symbols-outlined text-[16px] text-primary">auto_awesome</span>
+<span class="font-label-sm text-label-sm text-primary">India AI Mission Initiative</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface">Find Government Schemes You May Be Eligible For</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Powered by AI. Verified using official government documents.</p>
+<div class="flex flex-col sm:flex-row gap-sm pt-sm">
+<button class="bg-primary text-on-primary font-label-md text-label-md px-6 py-3 rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-2">
+                        Start Chatting
+                        <span class="material-symbols-outlined text-[18px]">chat</span>
+</button>
+<button class="bg-surface border border-outline-variant text-primary font-label-md text-label-md px-6 py-3 rounded-xl hover:bg-surface-variant transition-colors flex items-center justify-center gap-2">
+                        Explore Schemes
+                    </button>
+</div>
+</div>
+<div class="relative w-full aspect-[4/3] lg:aspect-square flex items-center justify-center">
+<!-- Background decoration -->
+<div class="absolute inset-0 bg-surface-container-low rounded-xl -z-10 transform translate-x-4 translate-y-4"></div>
+<img alt="Illustration of diverse Indian citizens using technology" class="w-full h-full object-cover rounded-xl shadow-sm border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUT0tov59DPhB5l6eSYmuxFifm9egjmSIURPmQF4xOnxrA2tkGRcIVOyMAJhZPElKr6iW6ZKXzFIFR-_theT2D4n3QBZlfdMsfHF4qPkjHstf3s470YvyWzQK4Fa3sSB4I_GRQ-g6Tj0wHvYzsEZJndBLCaM7-lVBuVyOYoUmaIPiWPzTBOs2UtgEpc55M0LSoXnt4SvU0OeShdXbBMe4Pf3Mh9kpW65-mwhSq_pgoBC7WeZL2f2sNqouiL7lzR3vPnGeCjOQI1WU"/>
+</div>
+</section>
+<!-- Features Section (Bento Grid) -->
+<section class="flex flex-col gap-lg py-lg">
+<div class="flex flex-col gap-xs text-center md:text-left">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Why Choose JanMitra AI?</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">Built on the pillars of Institutional Trust and Radical Clarity to ensure you get accurate, helpful information.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col gap-sm shadow-sm hover:shadow-md transition-shadow">
+<div class="h-12 w-12 bg-primary-container text-on-primary-container rounded-lg flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Verified Sources</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Responses are generated exclusively from verified government portals and official documents.</p>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col gap-sm shadow-sm hover:shadow-md transition-shadow">
+<div class="h-12 w-12 bg-secondary-container text-on-secondary-container rounded-lg flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">No Hallucinations</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Strict guardrails ensure the AI provides factual information without inventing policies.</p>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col gap-sm shadow-sm hover:shadow-md transition-shadow">
+<div class="h-12 w-12 bg-tertiary-container text-on-tertiary rounded-lg flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">translate</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Multi-language Support</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Interact comfortably in multiple regional languages to bridge the communication gap.</p>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col gap-sm shadow-sm hover:shadow-md transition-shadow">
+<div class="h-12 w-12 bg-surface-variant text-on-surface-variant rounded-lg flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Simple Explanations</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Complex bureaucratic jargon is translated into easy-to-understand, actionable steps.</p>
+</div>
+<!-- Card 5 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col gap-sm shadow-sm hover:shadow-md transition-shadow lg:col-span-2">
+<div class="flex flex-col md:flex-row gap-md items-start md:items-center">
+<div class="flex-grow flex flex-col gap-sm">
+<div class="h-12 w-12 bg-primary text-on-primary rounded-lg flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">rule</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Eligibility Guidance</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-md">Answer a few simple questions to automatically determine your eligibility for various state and central welfare schemes.</p>
+</div>
+<div class="w-full md:w-48 h-32 bg-surface-container rounded-lg border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-[48px]">assignment_turned_in</span>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col gap-sm shadow-sm hover:shadow-md transition-shadow">
+<div class="h-12 w-12 bg-error-container text-on-error-container rounded-lg flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">library_books</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Official Citations</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Every claim or requirement provided is backed by direct links to the official source document.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-highest dark:bg-inverse-surface border-t border-outline-variant dark:border-outline mt-auto">
+<div class="w-full py-xl px-gutter max-w-container-max mx-auto flex flex-col md:flex-row justify-between items-center gap-md">
+<div class="flex flex-col items-center md:items-start gap-sm">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">JanMitra AI</span>
+<p class="font-body-sm text-body-sm text-on-surface dark:text-inverse-on-surface opacity-80">© 2024 JanMitra AI. Government of India.</p>
+</div>
+<nav class="flex flex-wrap justify-center gap-md">
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Accessibility</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors" href="#">Contact Us</a>
+</nav>
+</div>
+</footer>
+</body></html>
