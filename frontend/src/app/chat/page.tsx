@@ -308,12 +308,14 @@ export default function ChatPage() {
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
+                          /* eslint-disable @typescript-eslint/no-unused-vars */
                           ul: ({node, ...props}) => <ul className="list-disc pl-5 my-2" {...props} />,
                           ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-2" {...props} />,
                           li: ({node, ...props}) => <li className="mb-1" {...props} />,
                           a: ({node, ...props}) => <a className="text-blue-500 hover:underline font-medium" target="_blank" rel="noopener noreferrer" {...props} />,
                           p: ({node, ...props}) => <p className="mb-2 last:mb-0 inline-block w-full" {...props} />,
                           strong: ({node, ...props}) => <strong className="font-semibold text-current" {...props} />
+                          /* eslint-enable @typescript-eslint/no-unused-vars */
                         }}
                       >
                         {msg.content + (msg.isStreaming ? ' ▍' : '')}

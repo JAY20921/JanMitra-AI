@@ -32,7 +32,7 @@ function getMatchColor(pct: number) {
   return { bg: "bg-tertiary-fixed-dim/20", text: "text-tertiary-container", border: "border-tertiary-fixed-dim/30", icon: "info", bar: "bg-tertiary-fixed-dim" };
 }
 
-function SchemeCard({ scheme, color }: { scheme: Scheme; color: any }) {
+function SchemeCard({ scheme, color }: { scheme: Scheme; color: ReturnType<typeof getMatchColor> }) {
   const [expanded, setExpanded] = useState(false);
   const visibleBenefits = expanded ? scheme.benefits : scheme.benefits.slice(0, 3);
   const hasMore = scheme.benefits.length > 3;
