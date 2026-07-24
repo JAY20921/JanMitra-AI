@@ -19,6 +19,8 @@ class QdrantStore:
     def _initialize(self):
         self.vector_store = None
         try:
+            if not settings.QDRANT_URL:
+                raise ValueError("QDRANT_URL environment variable is missing!")
             self.client = QClient(
                 url=settings.QDRANT_URL,
                 api_key=settings.QDRANT_API_KEY

@@ -18,13 +18,13 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "*"
     
     # Qdrant Database
-    QDRANT_URL: str = "http://localhost:6333"
+    QDRANT_URL: str = ""
     QDRANT_API_KEY: Optional[str] = None
     
     # LLM Providers
     GROQ_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_BASE_URL: str = ""
     
     # Live Search
     TAVILY_API_KEY: Optional[str] = None
