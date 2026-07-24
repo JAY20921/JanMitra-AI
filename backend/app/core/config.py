@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     
     # Environment
     ENVIRONMENT: str = "development"
+    CORS_ORIGINS: str = "*"
     
     # Qdrant Database
     QDRANT_URL: str = "http://localhost:6333"
