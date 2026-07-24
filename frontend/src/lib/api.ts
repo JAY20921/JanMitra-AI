@@ -3,7 +3,7 @@
  * Points to the FastAPI backend running on port 8000.
  */
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 /**
  * Generic fetcher with error handling.
