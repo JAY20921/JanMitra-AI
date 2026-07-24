@@ -12,7 +12,7 @@ from app.models.user import UserProfile
 def get_session_history(session_id: str):
     return SQLChatMessageHistory(
         session_id=session_id,
-        connection_string="sqlite+aiosqlite:///chat_history.db",
+        connection_string="sqlite+aiosqlite:///data/chat_history.db",
         async_mode=True
     )
 
