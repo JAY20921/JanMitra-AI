@@ -1,6 +1,16 @@
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup/shutdown lifecycle handler."""
+    # Ensure the data directory exists for SQLite chat history
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+    os.makedirs(data_dir, exist_ok=True)
+    yield
 
 def create_app() -> FastAPI:
     """
@@ -12,6 +22,7 @@ def create_app() -> FastAPI:
         version=settings.VERSION,
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
         description="Backend API for AI Citizen Assistant RAG Application",
+        lifespan=lifespan,
     )
 
     # Configure CORS - Set for development, restrict in production

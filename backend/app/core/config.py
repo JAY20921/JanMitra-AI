@@ -30,7 +30,11 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: Optional[str] = None
     
     # RAG / Embeddings
-    EMBEDDING_MODEL_NAME: str = "BAAI/bge-small-en-v1.5"
+    # Default: multilingual model supporting Hindi, Marathi, Tamil, Telugu, etc.
+    # This is critical for JanMitra's multilingual RAG pipeline.
+    # paraphrase-multilingual-MiniLM-L12-v2 is ~470MB, outputs 384-dim vectors,
+    # and fits comfortably within Render free tier's 512MB RAM.
+    EMBEDDING_MODEL_NAME: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
     model_config = SettingsConfigDict(
         env_file=".env", 

@@ -22,7 +22,10 @@ class TavilySearchService:
             self.search_tool = TavilySearchResults(
                 max_results=10, 
                 include_raw_content=True,
-                include_domains=self.validator.allowed_domains + self.validator.allowed_suffixes
+                # Only pass exact domain strings; Tavily does NOT support
+                # wildcard suffixes like ".gov.in".  The post-retrieval
+                # SourceValidator still catches any remaining non-gov URLs.
+                include_domains=self.validator.allowed_domains
             )
         
     async def perform_search(self, query: str) -> List[Document]:

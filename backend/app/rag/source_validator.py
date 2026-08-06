@@ -14,10 +14,57 @@ class SourceValidator:
         ]
         
         self.allowed_domains = [
+            # Central Government Core Portals
             "myscheme.gov.in",
             "india.gov.in",
             "pib.gov.in",
-            "egazette.nic.in"
+            "egazette.nic.in",
+            
+            # Major Central Scheme Portals
+            "pmjay.gov.in",
+            "pmkisan.gov.in",
+            "nrega.nic.in",
+            "nsap.nic.in",
+            
+            # State Government Portals (28 States)
+            "ap.gov.in",                 # Andhra Pradesh
+            "arunachalpradesh.gov.in",   # Arunachal Pradesh
+            "assam.gov.in",              # Assam
+            "state.bihar.gov.in",        # Bihar
+            "cgstate.gov.in",            # Chhattisgarh
+            "goa.gov.in",                # Goa
+            "gujarat.gov.in",            # Gujarat
+            "haryana.gov.in",            # Haryana
+            "himachal.nic.in",           # Himachal Pradesh
+            "jharkhand.gov.in",          # Jharkhand
+            "karnataka.gov.in",          # Karnataka
+            "kerala.gov.in",             # Kerala
+            "mp.gov.in",                 # Madhya Pradesh
+            "maharashtra.gov.in",        # Maharashtra
+            "manipur.gov.in",            # Manipur
+            "meghalaya.gov.in",          # Meghalaya
+            "mizoram.gov.in",            # Mizoram
+            "nagaland.gov.in",           # Nagaland
+            "odisha.gov.in",             # Odisha
+            "punjab.gov.in",             # Punjab
+            "rajasthan.gov.in",          # Rajasthan
+            "sikkim.gov.in",             # Sikkim
+            "tn.gov.in",                 # Tamil Nadu
+            "telangana.gov.in",          # Telangana
+            "tripura.gov.in",            # Tripura
+            "up.gov.in",                 # Uttar Pradesh
+            "uk.gov.in",                 # Uttarakhand
+            "wb.gov.in",                 # West Bengal
+            
+            # Union Territories (8 UTs)
+            "andaman.gov.in",            # Andaman and Nicobar Islands
+            "chandigarh.gov.in",         # Chandigarh
+            "ddd.gov.in",                # Dadra and Nagar Haveli and Daman and Diu
+            "delhi.gov.in",              # Delhi
+            "jk.gov.in",                 # Jammu and Kashmir
+            "ladakh.nic.in",             # Ladakh
+            "lakshadweep.gov.in",        # Lakshadweep
+            "py.gov.in"                  # Puducherry
         ]
 
     def is_valid_url(self, url: str) -> bool:

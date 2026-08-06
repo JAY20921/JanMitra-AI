@@ -73,7 +73,11 @@ async def get_schemes(
         seen_sources = {}
         for idx, doc in enumerate(results):
             source_url = doc.metadata.get("source", doc.metadata.get("source_url", f"unknown-{idx}"))
-            clean_title = "Govt Scheme"
+            clean_title = _get_best_title(
+                doc.metadata.get("title", ""),
+                doc.page_content,
+                fallback_idx=idx + 1
+            )
 
             if source_url in seen_sources:
                 # Append content to existing scheme's benefits
@@ -85,6 +89,9 @@ async def get_schemes(
 
             # Extract structured info from document content
             content = doc.page_content
+            if not _is_valid_scheme(clean_title, content):
+                continue
+            
             ministry = doc.metadata.get("ministry", "Government of India")
 
             # Extract eligibility from content
@@ -139,6 +146,10 @@ async def get_schemes(
                 content = doc.page_content
                 raw_title = doc.metadata.get("title", "")
                 title = _get_best_title(raw_title, content, fallback_idx=idx+1)
+                
+                if not _is_valid_scheme(title, content):
+                    continue
+
                 source_url = doc.metadata.get("source", "")
 
                 sentences = [s.strip() for s in content.split('.') if len(s.strip()) > 15]
@@ -215,10 +226,45 @@ def _clean_text(text: str) -> str:
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
 
+def _is_valid_scheme(title: str, content: str) -> bool:
+    text = (title + " " + content).lower()
+    bad_phrases = [
+        "something went wrong",
+        "please try again later",
+        "are you sure you want to sign out",
+        "enable javascript",
+        "logo icon",
+        "access denied",
+        "404 not found"
+    ]
+    if any(phrase in text for phrase in bad_phrases):
+        return False
+    return True
+
 def _extract_scheme_from_content(content: str) -> str:
     # Deprecated based on user feedback
     return ""
 
 def _get_best_title(raw_title: str, content: str, fallback_idx: int) -> str:
-    """Strictly returns a generic title as requested by the user."""
-    return "Govt Scheme"
+    """Extracts the best possible title from metadata or content."""
+    # 1. Use metadata title if it's meaningful
+    if raw_title:
+        # Clean up raw title (remove file extensions, URLs, aspx artifacts)
+        cleaned = raw_title.strip()
+        cleaned = re.sub(r'\.(aspx|html|php|pdf).*', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'https?://\S+', '', cleaned)
+        cleaned = cleaned.strip(" -|/")
+        if len(cleaned) > 5 and not cleaned.lower().startswith("pressrelease"):
+            return cleaned[:80]
+
+    # 2. Try to extract title from the first meaningful line of content
+    if content:
+        lines = [l.strip() for l in content.split('\n') if l.strip()]
+        for line in lines[:5]:
+            # Skip lines that are too short, too long, or look like metadata
+            clean_line = re.sub(r'[#\*_`]', '', line).strip()
+            if 10 < len(clean_line) < 100 and not clean_line.startswith('http'):
+                return clean_line[:80]
+
+    # 3. Fallback
+    return f"Government Scheme #{fallback_idx}"

@@ -1,12 +1,15 @@
+import logging
 from typing import Optional, List
 from langchain_core.documents import Document
 from app.rag.vector_store import QdrantStore
 from app.rag.metadata_filter import MetadataFilter
 from app.models.user import UserProfile
-from app.llm.providers import LLMFactory
 from app.services.tavily_client import TavilySearchService
 
 from app.rag.temp_store import TempSessionStore
+
+logger = logging.getLogger(__name__)
+
 
 class Retriever:
     """
@@ -25,13 +28,14 @@ class Retriever:
         """
         Uses Langchain Retrievers to get relevant documents from available tiers.
         """
-        print(f"Retrieving context for query: '{query}'")
+        logger.info("Retrieving context for query: '%s'", query)
         
         all_results = []
+        _qdrant_failed = False
         
         # --- Tier 1: User Uploaded Document (Highest Priority) ---
         if session_id and self.temp_store_manager.collection_exists(session_id):
-            print(f"Querying temporary user documents for session {session_id}...")
+            logger.info("Querying temporary user documents for session %s...", session_id)
             temp_retriever = self.temp_store_manager.get_vector_store(session_id).as_retriever(
                 search_type="similarity",
                 search_kwargs={"k": 3}
@@ -50,7 +54,7 @@ class Retriever:
             qdrant_filter = self.metadata_filter.build_qdrant_filter(user_profile)
             if qdrant_filter:
                 search_kwargs["filter"] = qdrant_filter
-                print(f"Applying filters: {qdrant_filter}")
+                logger.info("Applying Qdrant filters: %s", qdrant_filter)
             
         try:
             base_retriever = self.qdrant_store.get_vector_store().as_retriever(
@@ -63,14 +67,23 @@ class Retriever:
                 doc.metadata["source_type"] = "Local Knowledge Base"
             all_results.extend(qdrant_results)
         except Exception as e:
-            print(f"Warning: Failed to retrieve from Qdrant Local Knowledge Base: {e}")
+            # Log at ERROR level so monitoring tools can alert on database outages
+            logger.error(
+                "Qdrant retrieval FAILED — this may indicate the database is "
+                "offline or misconfigured. Tavily fallback will NOT be used to "
+                "prevent uncontrolled API credit consumption.  Error: %s",
+                e,
+                exc_info=True,
+            )
             qdrant_results = []
+            _qdrant_failed = True
             
         # --- Tier 3: Intelligent Fallback (Tavily Search) ---
-        # If Qdrant (global knowledge) didn't return enough documents, trigger live search
-        # We do not count Tier 1 (user doc) here because a user doc shouldn't block web search for general questions.
-        if len(qdrant_results) < 2:
-            print("Insufficient global documents found locally. Falling back to Tavily Live Search...")
+        # Only trigger live search when Qdrant returned too few results due to
+        # a genuine content gap — NOT because the database itself was down.
+        # This prevents silently burning Tavily API credits on infra failures.
+        if not _qdrant_failed and len(qdrant_results) < 2:
+            logger.info("Insufficient global documents found locally. Falling back to Tavily Live Search...")
             tavily_results = await self.tavily_service.perform_search(query)
             all_results.extend(tavily_results)
                 
@@ -85,7 +98,7 @@ class Retriever:
         results = await self.retrieve_documents(query, user_profile, session_id, top_k)
         
         if not results:
-            print("No relevant context found.")
+            logger.info("No relevant context found.")
             return ""
             
         # Format context for the LLM with transparent source tagging

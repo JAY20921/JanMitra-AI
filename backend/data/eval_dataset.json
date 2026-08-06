@@ -1,0 +1,75 @@
+[
+  {
+    "query": "What are the eligibility criteria for the PM Kisan Samman Nidhi scheme?",
+    "user_profile": {
+      "category": "Agriculture"
+    },
+    "expected_info": "Small and marginal farmers, up to 2 hectares of land, direct income support of Rs 6000 per year"
+  },
+  {
+    "query": "Is there any scholarship for female students in higher education?",
+    "user_profile": {
+      "gender": "female",
+      "category": "Education"
+    },
+    "expected_info": "Pragati Scholarship, female students, technical education, degree or diploma"
+  },
+  {
+    "query": "How can I get financial help for medical emergencies?",
+    "user_profile": {
+      "category": "Healthcare"
+    },
+    "expected_info": "Ayushman Bharat, PM-JAY, 5 lakh rupees health cover per family per year, secondary and tertiary care hospitalization"
+  },
+  {
+    "query": "What is the PMAY scheme and who can apply?",
+    "user_profile": {
+      "category": "Housing"
+    },
+    "expected_info": "Pradhan Mantri Awas Yojana, affordable housing, EWS, LIG, MIG categories"
+  },
+  {
+    "query": "Are there any loan schemes to start a small business for women?",
+    "user_profile": {
+      "gender": "female",
+      "category": "Finance"
+    },
+    "expected_info": "Stand-Up India, Mudra Yojana, women entrepreneurs, collateral-free loans"
+  },
+  {
+    "query": "I am a 65 year old farmer, what pension schemes can I get?",
+    "user_profile": {
+      "age": 65,
+      "category": "Agriculture"
+    },
+    "expected_info": "PM Kisan Maandhan Yojana, old age pension, Rs 3000 per month"
+  },
+  {
+    "query": "What benefits does the Ujjwala Yojana provide?",
+    "user_profile": {
+      "gender": "female"
+    },
+    "expected_info": "Free LPG connection, BPL households, women empowerment, clean cooking fuel"
+  },
+  {
+    "query": "Can I get a loan for my child's higher education abroad?",
+    "user_profile": {
+      "category": "Education"
+    },
+    "expected_info": "Education Loan Scheme, CSIS, interest subsidy, studies in India and abroad"
+  },
+  {
+    "query": "What schemes are available for skill development for unemployed youth?",
+    "user_profile": {
+      "occupation": "unemployed"
+    },
+    "expected_info": "PMKVY, Pradhan Mantri Kaushal Vikas Yojana, skill certification, placement assistance"
+  },
+  {
+    "query": "How does the Crop Insurance scheme help farmers?",
+    "user_profile": {
+      "category": "Agriculture"
+    },
+    "expected_info": "Pradhan Mantri Fasal Bima Yojana (PMFBY), financial support in case of crop failure, low premium rates"
+  }
+]

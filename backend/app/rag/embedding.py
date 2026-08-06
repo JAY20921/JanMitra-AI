@@ -14,3 +14,18 @@ def get_embedding_model():
     return HuggingFaceEmbeddings(
         model_name=model_name
     )
+
+
+@lru_cache(maxsize=1)
+def get_embedding_dimension() -> int:
+    """
+    Dynamically determines the vector dimension by embedding a short probe
+    string.  This avoids hardcoding a size that may not match the configured
+    model (e.g. 384 for bge-small vs 1024 for jina-v3).
+    """
+    model = get_embedding_model()
+    sample_vector = model.embed_query("dimension probe")
+    dimension = len(sample_vector)
+    print(f"Detected embedding dimension: {dimension}")
+    return dimension
+

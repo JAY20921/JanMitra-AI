@@ -1,8 +1,8 @@
 from qdrant_client import QdrantClient as QClient
 from langchain_qdrant import QdrantVectorStore
-from qdrant_client.models import VectorParams, Distance
+from qdrant_client.models import VectorParams, Distance, PayloadSchemaType
 from app.core.config import settings
-from app.rag.embedding import get_embedding_model
+from app.rag.embedding import get_embedding_model, get_embedding_dimension
 
 class QdrantStore:
     """
@@ -26,7 +26,8 @@ class QdrantStore:
                 api_key=settings.QDRANT_API_KEY
             )
             self.collection_name = "schemes_collection_local"
-            self.vector_size = 384
+            # Dynamically detect the vector size from the loaded embedding model
+            self.vector_size = get_embedding_dimension()
             self._ensure_collection()
             self.embeddings = get_embedding_model()
             self.vector_store = QdrantVectorStore(
@@ -51,6 +52,18 @@ class QdrantStore:
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(size=self.vector_size, distance=Distance.COSINE)
             )
+
+        # Create payload indexes to allow filtering without 400 Bad Request errors
+        for field in ["metadata.category", "metadata.state", "metadata.gender"]:
+            try:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name=field,
+                    field_schema=PayloadSchemaType.KEYWORD
+                )
+            except Exception as e:
+                # Typically throws if it already exists or if using a free tier that limits indexes, which is fine
+                pass
 
     def get_vector_store(self) -> QdrantVectorStore:
         if self.vector_store is None:

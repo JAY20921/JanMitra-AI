@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Manrope } from "next/font/google";
+import { Inter, Manrope, Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -12,9 +12,26 @@ const manrope = Manrope({
   variable: "--font-manrope",
 });
 
+const notoSansDevanagari = Noto_Sans_Devanagari({
+  subsets: ["devanagari"],
+  variable: "--font-devanagari",
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "JanMitra AI - Government Assistant",
-  description: "Find Government Schemes You May Be Eligible For",
+  title: "JanMitra AI — Your AI-Powered Government Scheme Assistant",
+  description:
+    "Discover government welfare schemes you may be eligible for. Powered by AI and verified using official government documents. Available in multiple Indian languages.",
+  keywords: [
+    "government schemes",
+    "welfare",
+    "India",
+    "JanMitra",
+    "AI assistant",
+    "eligibility",
+    "benefits",
+  ],
+  authors: [{ name: "JanMitra AI" }],
 };
 
 export default function RootLayout({
@@ -31,8 +48,10 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${manrope.variable} bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container`}
+        className={`${inter.variable} ${manrope.variable} ${notoSansDevanagari.variable} bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container`}
       >
+        {/* Tricolor bar at top of every page */}
+        <div className="tricolor-bar" aria-hidden="true" />
         {children}
       </body>
     </html>

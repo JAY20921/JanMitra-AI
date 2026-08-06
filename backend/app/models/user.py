@@ -11,3 +11,5 @@ class UserProfile(BaseModel):
     age: Optional[int] = None
     gender: Optional[str] = None
     income: Optional[float] = None
+    occupation: Optional[str] = None
+    education: Optional[str] = None

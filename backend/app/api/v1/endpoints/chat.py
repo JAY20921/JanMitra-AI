@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 from app.models.user import UserProfile
-from app.llm.generator import Generator
+from app.llm.generator import get_generator
 from fastapi.responses import StreamingResponse
 import asyncio
 
@@ -20,7 +20,7 @@ class ChatResponse(BaseModel):
 
 @router.post("/")
 async def chat_endpoint(request: ChatRequest):
-    generator = Generator(provider_name="groq") 
+    generator = get_generator()
     if request.stream:
         async def response_generator():
             try:

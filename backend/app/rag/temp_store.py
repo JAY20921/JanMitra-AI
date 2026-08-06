@@ -1,7 +1,7 @@
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
 from langchain_qdrant import QdrantVectorStore
-from app.rag.embedding import get_embedding_model
+from app.rag.embedding import get_embedding_model, get_embedding_dimension
 
 class TempSessionStore:
     """
@@ -19,8 +19,9 @@ class TempSessionStore:
     def _initialize(self):
         # ':memory:' keeps data transient and isolated from the main Qdrant DB
         self.client = QdrantClient(location=":memory:")
-        self.vector_size = 384  # Matches HuggingFace Embeddings
         self.embeddings = get_embedding_model()
+        # Dynamically detect the vector size from the loaded embedding model
+        self.vector_size = get_embedding_dimension()
 
     def _ensure_collection(self, session_id: str):
         """Creates a collection for the specific session if it doesn't exist."""
