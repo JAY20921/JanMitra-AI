@@ -40,7 +40,7 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="font-headline-md text-xl font-semibold text-on-surface mb-2">4. Your Rights</h2>
-            <p>Because your data is stored locally, you have complete control over it. You can delete or modify your profile at any time by visiting the Profile page or clearing your browser's local storage.</p>
+            <p>Because your data is stored locally, you have complete control over it. You can delete or modify your profile at any time by visiting the Profile page or clearing your browser&apos;s local storage.</p>
           </section>
         </div>
       </main>

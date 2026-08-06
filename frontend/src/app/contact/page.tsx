@@ -32,7 +32,7 @@ export default function ContactPage() {
       <main className="flex-1 max-w-2xl mx-auto px-gutter py-xl w-full">
         <div className="text-center mb-10">
           <h1 className="font-headline-lg text-4xl font-bold text-on-surface mb-2">Contact Us</h1>
-          <p className="font-body-md text-on-surface-variant">We'd love to hear from you. Please fill out this form.</p>
+          <p className="font-body-md text-on-surface-variant">We&apos;d love to hear from you. Please fill out this form.</p>
         </div>
 
         {submitted ? (
