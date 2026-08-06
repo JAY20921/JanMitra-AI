@@ -1,8 +1,11 @@
 import os
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -10,6 +13,21 @@ async def lifespan(app: FastAPI):
     # Ensure the data directory exists for SQLite chat history
     data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
     os.makedirs(data_dir, exist_ok=True)
+    
+    # Eagerly initialize the Generator singleton at startup.
+    # This loads the embedding model (~200MB), connects to Qdrant, and
+    # builds the LCEL chain BEFORE any user request arrives.
+    # Without this, the first chat request triggers all of this at once,
+    # which takes >120s on Render free tier and causes a Gunicorn
+    # WORKER TIMEOUT crash.
+    try:
+        logger.info("Pre-loading Generator singleton at startup...")
+        from app.llm.generator import get_generator
+        get_generator()
+        logger.info("Generator singleton ready.")
+    except Exception as e:
+        logger.warning("Generator pre-load failed (will retry on first request): %s", e)
+    
     yield
 
 def create_app() -> FastAPI:
