@@ -18,7 +18,7 @@ _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 _DATA_DIR = os.path.join(_BACKEND_DIR, "data")
 os.makedirs(_DATA_DIR, exist_ok=True)
 _DB_PATH = os.path.join(_DATA_DIR, "chat_history.db")
-_DB_URL = f"sqlite+aiosqlite:///{_DB_PATH.replace(os.sep, '/')}"
+_DB_URL = f"sqlite:///{_DB_PATH.replace(os.sep, '/')}"
 
 # Multilingual fallback messages — returned when no context is found.
 # This ensures the user sees a response in their selected language instead
@@ -42,8 +42,8 @@ def _get_no_context_message(language: str) -> str:
 def get_session_history(session_id: str):
     return SQLChatMessageHistory(
         session_id=session_id,
-        connection_string=_DB_URL,
-        async_mode=True
+        connection=f"sqlite:///{_DB_PATH.replace(os.sep, '/')}",
+        async_mode=False
     )
 
 class Generator:
