@@ -14,16 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn
 # Copy application code
 COPY . .
 
-# Pre-download the embedding model at build time so it's baked into the
-# Docker image.  This prevents a ~200MB download on Render's first request,
-# which would exceed the free tier's cold-start timeout.
-RUN python -c "\
-from sentence_transformers import SentenceTransformer; \
-import os; \
-model_name = os.environ.get('EMBEDDING_MODEL_NAME', 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'); \
-print(f'Pre-downloading embedding model: {model_name}'); \
-SentenceTransformer(model_name); \
-print('Model cached successfully.')"
+
 
 # Expose port
 EXPOSE 8000
