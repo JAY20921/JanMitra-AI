@@ -1,14 +1,21 @@
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from typing import List, Optional
+import uuid
+import re
+
 from app.rag.vector_store import QdrantStore
 from app.rag.metadata_filter import MetadataFilter
 from app.models.user import UserProfile
 from app.services.tavily_client import TavilySearchService
-import re
-import uuid
+from app.services.scheme_extractor import SchemeExtractor
+from app.services.scheme_cache import SchemeCache
 
 router = APIRouter()
+
+# Global instances for the API
+scheme_extractor = SchemeExtractor()
+scheme_cache = SchemeCache()
 
 class SchemeResponse(BaseModel):
     id: str
@@ -20,6 +27,22 @@ class SchemeResponse(BaseModel):
     source_url: Optional[str] = None
     source_type: str = "Local Knowledge Base"
 
+def _pre_process_text(text: str) -> str:
+    """
+    Lightweight pre-processor to strip obvious mojibake and control characters 
+    before sending to the LLM, reducing token waste.
+    """
+    if not text:
+        return ""
+    # Strip control characters
+    text = re.sub(r'[\x00-\x08\x0e-\x1f]', '', text)
+    text = re.sub(r'\ufffd', '', text)
+    # Strip sequences of ? mixed with non-ASCII that indicate mojibake
+    text = re.sub(r'(?:[\u0080-\u00ff]\??){3,}', '', text)
+    # Collapse whitespace
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
+
 @router.get("/", response_model=List[SchemeResponse])
 async def get_schemes(
     state: Optional[str] = Query(None, description="Filter by state"),
@@ -29,11 +52,13 @@ async def get_schemes(
     income: Optional[float] = Query(None, description="Filter by income"),
 ):
     """
-    Dynamically retrieves government schemes from the Qdrant knowledge base.
-    Uses a broad semantic query to discover all relevant schemes, then groups
-    and structures the results. Falls back to Tavily if Qdrant is empty.
+    Dynamically retrieves government schemes using Qdrant (local) and Tavily (live web).
+    Uses AI extraction to parse raw web text into structured SchemeResponse objects,
+    and caches the LLM outputs in SQLite to prevent redundant API calls.
     """
-    # Build profile from query params for metadata filtering
+    # Ensure cache DB is initialized
+    await scheme_cache.init_db()
+
     user_profile = UserProfile(
         state=state,
         category=category,
@@ -43,12 +68,15 @@ async def get_schemes(
     )
 
     schemes: List[SchemeResponse] = []
+    seen_urls = set()
 
+    # ---------------------------------------------------------
+    # 1. Local Knowledge Base (Qdrant)
+    # ---------------------------------------------------------
     try:
         qdrant_store = QdrantStore()
         vector_store = qdrant_store.get_vector_store()
 
-        # Build search kwargs with optional metadata filters
         search_kwargs = {"k": 20}
         metadata_filter = MetadataFilter()
         qdrant_filter = metadata_filter.build_qdrant_filter(user_profile)
@@ -60,211 +88,122 @@ async def get_schemes(
             search_kwargs=search_kwargs,
         )
 
-        # Use a broad query to discover schemes
         query = "government welfare schemes eligibility benefits"
-        if category:
-            query = f"{category} government schemes eligibility benefits"
-        if state:
-            query = f"{state} {query}"
+        if category: query = f"{category} {query}"
+        if state: query = f"{state} {query}"
 
         results = await retriever.ainvoke(query)
 
-        # Group documents by source URL to avoid merging all schemes into one
-        seen_sources = {}
         for idx, doc in enumerate(results):
-            source_url = doc.metadata.get("source", doc.metadata.get("source_url", f"unknown-{idx}"))
-            clean_title = _get_best_title(
-                doc.metadata.get("title", ""),
-                doc.page_content,
-                fallback_idx=idx + 1
-            )
-
-            if source_url in seen_sources:
-                # Append content to existing scheme's benefits
-                existing = seen_sources[source_url]
-                snippet = doc.page_content[:120].strip()
-                if snippet and snippet not in existing["_content_snippets"]:
-                    existing["_content_snippets"].append(snippet)
-                continue
-
-            # Extract structured info from document content
-            content = doc.page_content
-            if not _is_valid_scheme(clean_title, content):
-                continue
+            source_url = doc.metadata.get("source", doc.metadata.get("source_url", f"local-{idx}"))
             
-            ministry = doc.metadata.get("ministry", "Government of India")
+            if source_url in seen_urls:
+                continue
 
-            # Extract eligibility from content
-            eligibility = _extract_section(content, ["eligib", "who can apply", "criteria"])
-            if not eligibility:
-                eligibility = content[:150].strip() + "..."
+            raw_content = _pre_process_text(doc.page_content)
+            if len(raw_content) < 50:
+                continue
 
-            # Extract benefits
-            benefits_text = _extract_section(content, ["benefit", "features", "advantage", "provision"])
-            benefits = _parse_benefits(benefits_text) if benefits_text else []
-            if not benefits:
-                # Fallback: use first 2 sentences
-                sentences = [s.strip() for s in content.split('.') if len(s.strip()) > 15]
-                benefits = sentences[:2] if sentences else [content[:100]]
+            # Check cache first
+            cached_data = await scheme_cache.get(source_url)
+            
+            if cached_data:
+                if not cached_data.get("is_valid_scheme", False):
+                    seen_urls.add(source_url)
+                    continue
+                extracted = cached_data
+            else:
+                # LLM Extraction
+                ai_result = await scheme_extractor.extract(raw_content)
+                if not ai_result:
+                    continue
+                extracted = ai_result.model_dump()
+                await scheme_cache.set(source_url, extracted)
+                
+                if not extracted.get("is_valid_scheme", False):
+                    seen_urls.add(source_url)
+                    continue
 
-            # Score based on position (earlier results = higher relevance from vector search)
-            match_pct = max(60, 98 - idx * 5)
-
+            match_pct = max(60, 98 - len(schemes) * 5)
+            
             scheme_obj = SchemeResponse(
                 id=str(uuid.uuid4()),
-                title=clean_title,
-                ministry=ministry,
+                title=extracted.get("title", "Government Scheme"),
+                ministry=extracted.get("ministry", "Government of India"),
                 match_percentage=min(match_pct, 99),
-                eligibility_summary=_clean_text(eligibility[:200]),
-                benefits=[_clean_text(b) for b in benefits[:4]],
+                eligibility_summary=extracted.get("eligibility_summary", ""),
+                benefits=extracted.get("benefits", []),
                 source_url=source_url,
                 source_type="Local Knowledge Base",
             )
             
-            seen_sources[source_url] = {
-                "scheme": scheme_obj,
-                "_content_snippets": [doc.page_content[:120].strip()],
-            }
             schemes.append(scheme_obj)
+            seen_urls.add(source_url)
 
     except Exception as e:
         print(f"Error querying Qdrant for schemes: {e}")
 
-    # Fallback: If Qdrant returned nothing, try Tavily live search
+    # ---------------------------------------------------------
+    # 2. Live Web Fallback (Tavily)
+    # ---------------------------------------------------------
     if not schemes:
         try:
             tavily = TavilySearchService()
             query = "Indian government welfare schemes eligibility benefits 2026"
-            if category:
-                query = f"{category} {query}"
-            if state:
-                query = f"{state} {query}"
+            if category: query = f"{category} {query}"
+            if state: query = f"{state} {query}"
 
             tavily_docs = await tavily.perform_search(query)
 
-            for idx, doc in enumerate(tavily_docs[:6]):
-                content = doc.page_content
-                raw_title = doc.metadata.get("title", "")
-                title = _get_best_title(raw_title, content, fallback_idx=idx+1)
-                
-                if not _is_valid_scheme(title, content):
-                    continue
+            for idx, doc in enumerate(tavily_docs[:10]):
+                if len(schemes) >= 4:
+                    break
 
                 source_url = doc.metadata.get("source", "")
+                if not source_url or source_url in seen_urls:
+                    continue
 
-                sentences = [s.strip() for s in content.split('.') if len(s.strip()) > 15]
-                eligibility = sentences[0] if sentences else content[:150]
-                benefits = sentences[1:3] if len(sentences) > 1 else [content[:100]]
+                raw_content = _pre_process_text(doc.page_content)
+                if len(raw_content) < 50:
+                    continue
 
-                match_pct = max(55, 85 - idx * 5)
+                # Check cache first
+                cached_data = await scheme_cache.get(source_url)
+                
+                if cached_data:
+                    if not cached_data.get("is_valid_scheme", False):
+                        seen_urls.add(source_url)
+                        continue
+                    extracted = cached_data
+                else:
+                    # LLM Extraction
+                    ai_result = await scheme_extractor.extract(raw_content)
+                    if not ai_result:
+                        continue
+                    extracted = ai_result.model_dump()
+                    await scheme_cache.set(source_url, extracted)
+                    
+                    if not extracted.get("is_valid_scheme", False):
+                        seen_urls.add(source_url)
+                        continue
+
+                match_pct = max(55, 85 - len(schemes) * 5)
 
                 schemes.append(SchemeResponse(
                     id=f"tavily-{idx}",
-                    title=title[:80],
-                    ministry="Government of India",
+                    title=extracted.get("title", "Government Scheme"),
+                    ministry=extracted.get("ministry", "Government of India"),
                     match_percentage=match_pct,
-                    eligibility_summary=_clean_text(eligibility[:200]),
-                    benefits=[_clean_text(b) for b in benefits[:3]],
+                    eligibility_summary=extracted.get("eligibility_summary", ""),
+                    benefits=extracted.get("benefits", []),
                     source_url=source_url,
                     source_type="Live Web",
                 ))
+                seen_urls.add(source_url)
+
         except Exception as e:
             print(f"Error in Tavily fallback for schemes: {e}")
 
-    # Sort by match percentage descending
     schemes.sort(key=lambda s: s.match_percentage, reverse=True)
-
     return schemes
 
-
-def _extract_section(text: str, keywords: List[str]) -> str:
-    """Extract a section from text that contains any of the given keywords."""
-    lines = text.split('\n')
-    capturing = False
-    captured = []
-
-    for line in lines:
-        lower_line = line.lower()
-        if any(kw in lower_line for kw in keywords):
-            capturing = True
-            # Don't include the header line itself if it's just a label
-            if len(line.strip()) > 30:
-                captured.append(line.strip())
-            continue
-        if capturing:
-            if line.strip() == '' and captured:
-                break
-            if line.strip():
-                captured.append(line.strip())
-            if len(captured) >= 3:
-                break
-
-    return ' '.join(captured) if captured else ""
-
-
-def _parse_benefits(text: str) -> List[str]:
-    """Parse benefits text into a list of individual benefit strings."""
-    if not text:
-        return []
-
-    # Try splitting by bullet points, numbered lists, or newlines
-    parts = re.split(r'[\n•●\-]\s*|\d+\.\s*', text)
-    benefits = [p.strip() for p in parts if len(p.strip()) > 10]
-
-    if not benefits:
-        # Fallback: split by sentences
-        benefits = [s.strip() for s in text.split('.') if len(s.strip()) > 10]
-
-    return benefits[:4]
-
-
-def _clean_text(text: str) -> str:
-    """Removes markdown characters and excessive whitespace."""
-    if not text:
-        return ""
-    text = re.sub(r'[#\*_`]', '', text)
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()
-
-def _is_valid_scheme(title: str, content: str) -> bool:
-    text = (title + " " + content).lower()
-    bad_phrases = [
-        "something went wrong",
-        "please try again later",
-        "are you sure you want to sign out",
-        "enable javascript",
-        "logo icon",
-        "access denied",
-        "404 not found"
-    ]
-    if any(phrase in text for phrase in bad_phrases):
-        return False
-    return True
-
-def _extract_scheme_from_content(content: str) -> str:
-    # Deprecated based on user feedback
-    return ""
-
-def _get_best_title(raw_title: str, content: str, fallback_idx: int) -> str:
-    """Extracts the best possible title from metadata or content."""
-    # 1. Use metadata title if it's meaningful
-    if raw_title:
-        # Clean up raw title (remove file extensions, URLs, aspx artifacts)
-        cleaned = raw_title.strip()
-        cleaned = re.sub(r'\.(aspx|html|php|pdf).*', '', cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r'https?://\S+', '', cleaned)
-        cleaned = cleaned.strip(" -|/")
-        if len(cleaned) > 5 and not cleaned.lower().startswith("pressrelease"):
-            return cleaned[:80]
-
-    # 2. Try to extract title from the first meaningful line of content
-    if content:
-        lines = [l.strip() for l in content.split('\n') if l.strip()]
-        for line in lines[:5]:
-            # Skip lines that are too short, too long, or look like metadata
-            clean_line = re.sub(r'[#\*_`]', '', line).strip()
-            if 10 < len(clean_line) < 100 and not clean_line.startswith('http'):
-                return clean_line[:80]
-
-    # 3. Fallback
-    return f"Government Scheme #{fallback_idx}"

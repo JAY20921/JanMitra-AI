@@ -37,6 +37,23 @@ Chat History:
 Follow-up Question: {query}
 Standalone Question:"""
 
+    SCHEME_EXTRACTION_TEMPLATE = """You are an expert data extractor for Indian Government welfare schemes.
+Your task is to extract structured information about a government scheme from the provided text.
+
+<instructions>
+1. Carefully read the source text.
+2. If the text does NOT describe a specific government scheme, policy, or welfare program (e.g. it's just a contact us page, a list of random news, or a generic portal homepage), set `is_valid_scheme` to false and return empty strings/lists for the rest.
+3. If it IS a valid scheme, extract the following:
+   - `title`: A clean, concise title of the scheme (max 80 chars). Avoid generic titles like "Government Scheme" if a specific name is mentioned.
+   - `ministry`: The government ministry, department, or state government responsible (e.g., "Ministry of Agriculture", "Government of Maharashtra").
+   - `eligibility_summary`: A concise 1-3 sentence summary of who is eligible for the scheme.
+   - `benefits`: A list of up to 4 distinct benefits provided by the scheme. Keep each benefit concise (max 200 chars).
+4. Output EXACTLY valid JSON matching the specified schema. DO NOT include any markdown formatting, explanations, or text outside the JSON object.
+</instructions>
+
+Source Text:
+{text}"""
+
     @staticmethod
     def get_rag_prompt() -> ChatPromptTemplate:
         return ChatPromptTemplate.from_messages([

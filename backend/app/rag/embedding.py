@@ -1,4 +1,4 @@
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import JinaEmbeddings
 from app.core.config import settings
 
 from functools import lru_cache
@@ -6,13 +6,24 @@ from functools import lru_cache
 @lru_cache(maxsize=1)
 def get_embedding_model():
     """
-    Returns a Langchain HuggingFaceEmbeddings instance.
-    Runs locally to eliminate API latency and dependency errors.
+    Returns a Langchain JinaEmbeddings instance backed by the Jina AI cloud API.
+
+    Uses jina-embeddings-v3: a multilingual (94 languages), open-source model
+    served via the Jina API.  This eliminates the need to download / load a
+    large model locally, drastically reducing RAM usage on hosting platforms
+    like Render while providing superior retrieval quality.
+
+    Key specs:
+        - 1024-dimensional vectors (vs 384 from the old MiniLM model)
+        - 8 192-token context window
+        - Task-specific LoRA adapters (retrieval, classification, etc.)
+        - Matryoshka embeddings (dimensions can be truncated if needed)
     """
-    model_name = settings.EMBEDDING_MODEL_NAME or "BAAI/bge-small-en-v1.5"
-    print(f"Loading local embedding model: {model_name}...")
-    return HuggingFaceEmbeddings(
-        model_name=model_name
+    model_name = settings.EMBEDDING_MODEL_NAME or "jina-embeddings-v3"
+    print(f"Initialising Jina cloud embedding model: {model_name}...")
+    return JinaEmbeddings(
+        jina_api_key=settings.JINA_API_KEY,
+        model_name=model_name,
     )
 
 

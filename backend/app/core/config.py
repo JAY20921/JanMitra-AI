@@ -29,12 +29,15 @@ class Settings(BaseSettings):
     # Live Search
     TAVILY_API_KEY: Optional[str] = None
     
+    # Jina AI (Embeddings)
+    JINA_API_KEY: Optional[str] = None
+
     # RAG / Embeddings
-    # Default: multilingual model supporting Hindi, Marathi, Tamil, Telugu, etc.
-    # This is critical for JanMitra's multilingual RAG pipeline.
-    # paraphrase-multilingual-MiniLM-L12-v2 is ~470MB, outputs 384-dim vectors,
-    # and fits comfortably within Render free tier's 512MB RAM.
-    EMBEDDING_MODEL_NAME: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    # Default: jina-embeddings-v3 — a cloud-hosted, open-source, multilingual
+    # model supporting 94 languages (Hindi, Marathi, Tamil, Telugu, etc.).
+    # Served via the Jina AI API; no local model download required.
+    # Outputs 1024-dim vectors with an 8 192-token context window.
+    EMBEDDING_MODEL_NAME: str = "jina-embeddings-v3"
 
     model_config = SettingsConfigDict(
         env_file=".env", 

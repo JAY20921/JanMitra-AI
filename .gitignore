@@ -57,7 +57,8 @@ citizen-ai/data/raw/*
 citizen-ai/data/processed/*
 !citizen-ai/data/processed/.gitkeep
 
-# IDEs
+# IDEs and Agents
 .vscode/
 .idea/
 *.swp
+.agents/

@@ -42,8 +42,8 @@ def _get_no_context_message(language: str) -> str:
 def get_session_history(session_id: str):
     return SQLChatMessageHistory(
         session_id=session_id,
-        connection=f"sqlite:///{_DB_PATH.replace(os.sep, '/')}",
-        async_mode=False
+        connection=f"sqlite+aiosqlite:///{_DB_PATH.replace(os.sep, '/')}",
+        async_mode=True
     )
 
 class Generator:

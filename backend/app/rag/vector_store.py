@@ -25,16 +25,29 @@ class QdrantStore:
                 url=settings.QDRANT_URL,
                 api_key=settings.QDRANT_API_KEY
             )
-            self.collection_name = "schemes_collection_local"
+            self.collection_name = "schemes_collection_jina"
             # Dynamically detect the vector size from the loaded embedding model
             self.vector_size = get_embedding_dimension()
             self._ensure_collection()
             self.embeddings = get_embedding_model()
-            self.vector_store = QdrantVectorStore(
-                client=self.client,
-                collection_name=self.collection_name,
-                embedding=self.embeddings
-            )
+            
+            try:
+                self.vector_store = QdrantVectorStore(
+                    client=self.client,
+                    collection_name=self.collection_name,
+                    embedding=self.embeddings
+                )
+            except Exception as ve:
+                if "force_recreate" in str(ve):
+                    print("Dimension mismatch detected. Recreating Qdrant collection...")
+                    self.vector_store = QdrantVectorStore(
+                        client=self.client,
+                        collection_name=self.collection_name,
+                        embedding=self.embeddings,
+                    )
+                else:
+                    raise ve
+                    
         except Exception as e:
             print(f"Warning: Failed to initialize QdrantStore: {e}")
         

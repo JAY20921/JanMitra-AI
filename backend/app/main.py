@@ -1,9 +1,17 @@
 import os
 import logging
+import warnings
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+
+# Suppress Langchain deprecation warnings to keep startup logs clean
+try:
+    from langchain_core._api.deprecation import LangChainDeprecationWarning
+    warnings.filterwarnings("ignore", category=LangChainDeprecationWarning)
+except ImportError:
+    pass
 
 logger = logging.getLogger(__name__)
 
