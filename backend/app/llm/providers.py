@@ -1,4 +1,3 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_ollama import ChatOllama
 from langchain_groq import ChatGroq
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -15,21 +14,13 @@ class LLMFactory:
         if provider_name == "groq":
             if not settings.GROQ_API_KEY:
                 raise ValueError("GROQ_API_KEY is not set in environment")
-            return ChatGroq(
+            primary_llm = ChatGroq(
                 model=model_name or "llama-3.3-70b-versatile",
                 temperature=0.0,
                 api_key=settings.GROQ_API_KEY,
                 streaming=True
             )
-            
-        elif provider_name == "gemini":
-            if not settings.GEMINI_API_KEY:
-                raise ValueError("GEMINI_API_KEY is not set in environment")
-            return ChatGoogleGenerativeAI(
-                model=model_name or "gemini-pro",
-                temperature=0.0,
-                google_api_key=settings.GEMINI_API_KEY
-            )
+            return primary_llm
             
         elif provider_name == "ollama":
             return ChatOllama(

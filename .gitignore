@@ -62,3 +62,10 @@ citizen-ai/data/processed/*
 .idea/
 *.swp
 .agents/
+
+
+# Temporary scripts and generated files
+backend/test_*.py
+backend/test_*.py
+
+implementation_plan.md

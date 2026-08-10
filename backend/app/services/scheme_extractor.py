@@ -6,7 +6,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from app.llm.providers import LLMFactory
 from app.llm.prompts import PromptBuilder
-
+from app.models.user import UserProfile
 logger = logging.getLogger(__name__)
 
 class ExtractedScheme(BaseModel):
@@ -15,7 +15,8 @@ class ExtractedScheme(BaseModel):
     ministry: str = Field(description="The responsible ministry or state government.")
     eligibility_summary: str = Field(description="Concise summary of eligibility.")
     benefits: List[str] = Field(description="List of up to 4 distinct benefits.")
-
+    is_user_eligible: bool = Field(default=True, description="True if the provided user profile meets the eligibility criteria of this scheme. If no profile is provided, assume true.")
+    match_score: int = Field(default=85, description="A score from 0 to 100 indicating how well the user profile matches the scheme. 100 is a perfect match.")
 class SchemeExtractor:
     """
     Uses an LLM to extract structured scheme data from raw web content.
@@ -27,16 +28,16 @@ class SchemeExtractor:
         self.parser = JsonOutputParser(pydantic_object=ExtractedScheme)
         
         self.prompt = PromptTemplate(
-            template=PromptBuilder.SCHEME_EXTRACTION_TEMPLATE + "\n{format_instructions}",
-            input_variables=["text"],
+            template=PromptBuilder.SCHEME_EXTRACTION_TEMPLATE + "\n\nUser Profile for Eligibility Check:\n{user_profile}\n\nBased on the User Profile, determine if the user is eligible for this scheme (is_user_eligible) and provide a match_score (0-100).\n{format_instructions}",
+            input_variables=["text", "user_profile"],
             partial_variables={"format_instructions": self.parser.get_format_instructions()},
         )
         
         self.chain = self.prompt | self.llm | self.parser
 
-    async def extract(self, text: str) -> Optional[ExtractedScheme]:
+    async def extract(self, text: str, user_profile: Optional[UserProfile] = None) -> Optional[ExtractedScheme]:
         """
-        Extracts structured data from raw text.
+        Extracts structured data from raw text and evaluates user eligibility.
         Returns an ExtractedScheme object, or None if extraction fails.
         """
         if not text or len(text.strip()) < 50:
@@ -47,7 +48,8 @@ class SchemeExtractor:
             # and excessive token usage for extraction
             truncated_text = text[:15000]
             
-            result = await self.chain.ainvoke({"text": truncated_text})
+            profile_str = user_profile.model_dump_json() if user_profile else "No profile provided"
+            result = await self.chain.ainvoke({"text": truncated_text, "user_profile": profile_str})
             
             # The parser returns a dict matching the Pydantic schema
             extracted = ExtractedScheme(**result)

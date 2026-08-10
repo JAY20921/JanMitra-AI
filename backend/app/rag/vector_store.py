@@ -11,10 +11,17 @@ class QdrantStore:
     _instance = None
     
     def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(QdrantStore, cls).__new__(cls)
-            cls._instance._initialize()
-        return cls._instance
+        if cls._instance is not None:
+            return cls._instance
+            
+        instance = super(QdrantStore, cls).__new__(cls)
+        try:
+            instance._initialize()
+            if instance.vector_store is not None:
+                cls._instance = instance
+        except Exception:
+            pass
+        return cls._instance or instance
         
     def _initialize(self):
         self.vector_store = None
@@ -79,6 +86,9 @@ class QdrantStore:
                 pass
 
     def get_vector_store(self) -> QdrantVectorStore:
+        if self.vector_store is None:
+            print("Attempting to re-initialize QdrantStore...")
+            self._initialize()
         if self.vector_store is None:
             raise RuntimeError("QdrantStore was not successfully initialized (database may be offline).")
         return self.vector_store

@@ -3,6 +3,10 @@ from app.core.config import settings
 
 from functools import lru_cache
 
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 @lru_cache(maxsize=1)
 def get_embedding_model():
     """
@@ -21,9 +25,25 @@ def get_embedding_model():
     """
     model_name = settings.EMBEDDING_MODEL_NAME or "jina-embeddings-v3"
     print(f"Initialising Jina cloud embedding model: {model_name}...")
+    
+    # Configure a retry session to handle transient ConnectionResetErrors from the API
+    session = requests.Session()
+    retry = Retry(
+        total=5,
+        read=5,
+        connect=5,
+        backoff_factor=0.5,
+        status_forcelist=[500, 502, 503, 504],
+        allowed_methods=None # Retry on all methods including POST
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    
     return JinaEmbeddings(
         jina_api_key=settings.JINA_API_KEY,
         model_name=model_name,
+        session=session
     )
 
 

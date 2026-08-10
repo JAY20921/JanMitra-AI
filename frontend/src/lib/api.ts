@@ -108,6 +108,7 @@ export interface Scheme {
   benefits: string[];
   source_url?: string;
   source_type: string;
+  is_user_eligible: boolean;
 }
 
 /**
@@ -119,6 +120,7 @@ export async function fetchSchemes(params?: {
   age?: number;
   gender?: string;
   income?: number;
+  eligible_only?: boolean;
 }): Promise<Scheme[]> {
   const searchParams = new URLSearchParams();
   if (params?.state) searchParams.set("state", params.state);
@@ -126,6 +128,7 @@ export async function fetchSchemes(params?: {
   if (params?.age) searchParams.set("age", String(params.age));
   if (params?.gender) searchParams.set("gender", params.gender);
   if (params?.income) searchParams.set("income", String(params.income));
+  if (params?.eligible_only !== undefined) searchParams.set("eligible_only", String(params.eligible_only));
 
   const qs = searchParams.toString();
   const endpoint = `/schemes/${qs ? `?${qs}` : ""}`;

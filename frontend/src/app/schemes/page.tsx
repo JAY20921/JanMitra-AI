@@ -60,6 +60,12 @@ function SchemeModal({ scheme, color, onClose }: { scheme: Scheme; color: Return
                 <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>{color.icon}</span>
                 <span className="font-label-md font-bold">{scheme.match_percentage}% Match</span>
               </div>
+              {!scheme.is_user_eligible && (
+                <span className="font-label-sm text-error flex items-center gap-1.5 bg-error/10 px-3 py-1.5 rounded-lg border border-error/20 shadow-elevation-1 font-bold">
+                  <span className="material-symbols-outlined text-[18px]">cancel</span>
+                  Ineligible
+                </span>
+              )}
               {scheme.source_type === "Live Web" && (
                 <span className="font-label-sm text-on-surface-variant flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-outline-variant shadow-elevation-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-india-green animate-pulse" />
@@ -152,6 +158,12 @@ function SchemeCard({ scheme, color, onClick }: { scheme: Scheme; color: ReturnT
             <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>{color.icon}</span>
             <span className="font-label-sm text-label-sm font-bold">{scheme.match_percentage}%</span>
           </div>
+          {!scheme.is_user_eligible && (
+            <span className="font-label-sm text-[10px] text-error font-bold mt-1.5 flex items-center gap-0.5 bg-error/10 px-2 py-0.5 rounded-full border border-error/20">
+              <span className="material-symbols-outlined text-[12px]">cancel</span>
+              Ineligible
+            </span>
+          )}
           {scheme.source_type === "Live Web" && (
             <span className="font-label-sm text-label-sm text-on-surface-variant mt-1.5 flex items-center gap-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-india-green animate-pulse" />
@@ -218,6 +230,7 @@ export default function SchemesPage() {
   const [error, setError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [stateFilter, setStateFilter] = useState("");
+  const [eligibleOnly, setEligibleOnly] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null);
 
@@ -225,9 +238,10 @@ export default function SchemesPage() {
     setLoading(true);
     setError(null);
     try {
-      const params: Record<string, string | number> = {};
+      const params: Record<string, string | number | boolean> = {};
       if (categoryFilter) params.category = categoryFilter;
       if (stateFilter) params.state = stateFilter;
+      params.eligible_only = eligibleOnly;
 
       // Load profile from localStorage if available
       const savedProfile = localStorage.getItem("janmitra_profile");
@@ -250,7 +264,7 @@ export default function SchemesPage() {
     } finally {
       setLoading(false);
     }
-  }, [categoryFilter, stateFilter]);
+  }, [categoryFilter, stateFilter, eligibleOnly]);
 
   useEffect(() => {
     loadSchemes();
@@ -271,6 +285,7 @@ export default function SchemesPage() {
   const clearFilters = () => {
     setCategoryFilter("");
     setStateFilter("");
+    setEligibleOnly(true);
     setSearchQuery("");
   };
 
@@ -365,6 +380,21 @@ export default function SchemesPage() {
                     <option value="Delhi">Delhi</option>
                     <option value="Rajasthan">Rajasthan</option>
                     <option value="West Bengal">West Bengal</option>
+                  </select>
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[18px]">expand_more</span>
+                </div>
+              </div>
+              {/* Eligibility Filter */}
+              <div>
+                <label className="font-label-md text-label-md text-on-surface-variant block mb-xs">Show Schemes</label>
+                <div className="relative">
+                  <select
+                    value={eligibleOnly ? "eligible" : "all"}
+                    onChange={(e) => setEligibleOnly(e.target.value === "eligible")}
+                    className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-2.5 font-body-sm text-body-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none appearance-none cursor-pointer transition-all"
+                  >
+                    <option value="eligible">Only Eligible Schemes</option>
+                    <option value="all">All Schemes</option>
                   </select>
                   <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[18px]">expand_more</span>
                 </div>

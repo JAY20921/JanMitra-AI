@@ -26,6 +26,7 @@ class SchemeResponse(BaseModel):
     benefits: List[str]
     source_url: Optional[str] = None
     source_type: str = "Local Knowledge Base"
+    is_user_eligible: bool = True
 
 def _pre_process_text(text: str) -> str:
     """
@@ -50,6 +51,7 @@ async def get_schemes(
     age: Optional[int] = Query(None, description="Filter by age"),
     gender: Optional[str] = Query(None, description="Filter by gender"),
     income: Optional[float] = Query(None, description="Filter by income"),
+    eligible_only: bool = Query(True, description="Show only eligible schemes"),
 ):
     """
     Dynamically retrieves government schemes using Qdrant (local) and Tavily (live web).
@@ -66,6 +68,10 @@ async def get_schemes(
         gender=gender,
         income=income,
     )
+    
+    # We need a stable hash of the user profile for caching, because
+    # the LLM now evaluates eligibility specific to this exact profile.
+    profile_hash = str(hash(user_profile.model_dump_json()))
 
     schemes: List[SchemeResponse] = []
     seen_urls = set()
@@ -88,9 +94,13 @@ async def get_schemes(
             search_kwargs=search_kwargs,
         )
 
-        query = "government welfare schemes eligibility benefits"
-        if category: query = f"{category} {query}"
-        if state: query = f"{state} {query}"
+        query_parts = ["government welfare schemes eligibility benefits"]
+        if category: query_parts.append(f"for {category}")
+        if state: query_parts.append(f"in {state}")
+        if age: query_parts.append(f"for {age} years old")
+        if gender: query_parts.append(f"for {gender}")
+        if income: query_parts.append(f"income {income}")
+        query = " ".join(query_parts)
 
         results = await retriever.ainvoke(query)
 
@@ -105,26 +115,31 @@ async def get_schemes(
                 continue
 
             # Check cache first
-            cached_data = await scheme_cache.get(source_url)
+            cache_key = f"{source_url}_{profile_hash}"
+            cached_data = await scheme_cache.get(cache_key)
             
             if cached_data:
-                if not cached_data.get("is_valid_scheme", False):
+                if not cached_data.get("is_valid_scheme", False) or not cached_data.get("is_user_eligible", True):
                     seen_urls.add(source_url)
                     continue
                 extracted = cached_data
             else:
                 # LLM Extraction
-                ai_result = await scheme_extractor.extract(raw_content)
+                ai_result = await scheme_extractor.extract(raw_content, user_profile)
                 if not ai_result:
                     continue
                 extracted = ai_result.model_dump()
-                await scheme_cache.set(source_url, extracted)
+                await scheme_cache.set(cache_key, extracted)
                 
                 if not extracted.get("is_valid_scheme", False):
                     seen_urls.add(source_url)
                     continue
+                is_eligible = extracted.get("is_user_eligible", True)
+                if eligible_only and not is_eligible:
+                    seen_urls.add(source_url)
+                    continue
 
-            match_pct = max(60, 98 - len(schemes) * 5)
+            match_pct = extracted.get("match_score", 85)
             
             scheme_obj = SchemeResponse(
                 id=str(uuid.uuid4()),
@@ -135,6 +150,7 @@ async def get_schemes(
                 benefits=extracted.get("benefits", []),
                 source_url=source_url,
                 source_type="Local Knowledge Base",
+                is_user_eligible=is_eligible,
             )
             
             schemes.append(scheme_obj)
@@ -149,9 +165,13 @@ async def get_schemes(
     if not schemes:
         try:
             tavily = TavilySearchService()
-            query = "Indian government welfare schemes eligibility benefits 2026"
-            if category: query = f"{category} {query}"
-            if state: query = f"{state} {query}"
+            query_parts = ["Indian government welfare schemes eligibility benefits 2026"]
+            if category: query_parts.append(f"for {category}")
+            if state: query_parts.append(f"in {state}")
+            if age: query_parts.append(f"for {age} years old")
+            if gender: query_parts.append(f"for {gender}")
+            if income: query_parts.append(f"income {income}")
+            query = " ".join(query_parts)
 
             tavily_docs = await tavily.perform_search(query)
 
@@ -168,26 +188,31 @@ async def get_schemes(
                     continue
 
                 # Check cache first
-                cached_data = await scheme_cache.get(source_url)
+                cache_key = f"{source_url}_{profile_hash}"
+                cached_data = await scheme_cache.get(cache_key)
                 
                 if cached_data:
-                    if not cached_data.get("is_valid_scheme", False):
+                    if not cached_data.get("is_valid_scheme", False) or not cached_data.get("is_user_eligible", True):
                         seen_urls.add(source_url)
                         continue
                     extracted = cached_data
                 else:
                     # LLM Extraction
-                    ai_result = await scheme_extractor.extract(raw_content)
+                    ai_result = await scheme_extractor.extract(raw_content, user_profile)
                     if not ai_result:
                         continue
                     extracted = ai_result.model_dump()
-                    await scheme_cache.set(source_url, extracted)
+                    await scheme_cache.set(cache_key, extracted)
                     
                     if not extracted.get("is_valid_scheme", False):
                         seen_urls.add(source_url)
                         continue
+                    is_eligible = extracted.get("is_user_eligible", True)
+                    if eligible_only and not is_eligible:
+                        seen_urls.add(source_url)
+                        continue
 
-                match_pct = max(55, 85 - len(schemes) * 5)
+                match_pct = extracted.get("match_score", 85)
 
                 schemes.append(SchemeResponse(
                     id=f"tavily-{idx}",
@@ -198,6 +223,7 @@ async def get_schemes(
                     benefits=extracted.get("benefits", []),
                     source_url=source_url,
                     source_type="Live Web",
+                    is_user_eligible=is_eligible,
                 ))
                 seen_urls.add(source_url)
 
