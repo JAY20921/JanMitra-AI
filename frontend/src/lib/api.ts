@@ -108,7 +108,7 @@ export interface Scheme {
   benefits: string[];
   source_url?: string;
   source_type: string;
-  is_user_eligible: boolean;
+  eligibility_status: "supported" | "partially_supported" | "insufficient_evidence" | "conflicting_evidence";
 }
 
 /**

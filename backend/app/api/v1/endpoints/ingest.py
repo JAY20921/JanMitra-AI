@@ -36,8 +36,23 @@ def process_file_in_background(file_path: str):
     except Exception as e:
         print(f"Error processing {file_path}: {e}")
 
+from fastapi.security import APIKeyHeader
+from fastapi import Depends
+from app.core.config import settings
+
+api_key_header = APIKeyHeader(name="X-API-Key")
+
+def verify_admin_key(api_key: str = Depends(api_key_header)):
+    if api_key != settings.ADMIN_API_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden: Invalid Admin API Key")
+    return api_key
+
 @router.post("/document", response_model=IngestResponse)
-async def ingest_document(request: IngestRequest, background_tasks: BackgroundTasks):
+async def ingest_document(
+    request: IngestRequest, 
+    background_tasks: BackgroundTasks,
+    api_key: str = Depends(verify_admin_key)
+):
     if not os.path.exists(request.file_path):
         raise HTTPException(status_code=404, detail="File not found")
         
@@ -45,7 +60,7 @@ async def ingest_document(request: IngestRequest, background_tasks: BackgroundTa
     return IngestResponse(message="Ingestion started in background")
 
 from fastapi import UploadFile, File, Form
-from app.rag.temp_store import TempSessionStore
+from app.rag.temp_store import get_temp_store
 import shutil
 
 @router.post("/temp", response_model=IngestResponse)
@@ -57,6 +72,16 @@ async def ingest_temp_document(
     Ingests a user-uploaded document into an in-memory session store.
     It will be used as the highest priority context for queries with this session_id.
     """
+    # 1. Validation
+    if not file.content_type in ["application/pdf", "text/plain"]:
+        raise HTTPException(status_code=400, detail="Only PDF and TXT files are allowed.")
+    
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+    file.file.seek(0)
+    if file_size > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 5MB limit.")
+
     temp_dir = "temp_uploads"
     os.makedirs(temp_dir, exist_ok=True)
     
@@ -87,7 +112,7 @@ async def ingest_temp_document(
         chunks = chunker.chunk_documents(documents)
         
         # 3. Add to In-Memory Temp Store
-        temp_store = TempSessionStore().get_vector_store(session_id)
+        temp_store = get_temp_store().get_vector_store(session_id)
         temp_store.add_documents(chunks)
         
         return IngestResponse(
@@ -99,7 +124,6 @@ async def ingest_temp_document(
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
     finally:
         # Clean up the temporary file
-        # Clean up the temporary file
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 
@@ -109,5 +133,5 @@ async def clear_temp_documents(session_id: str):
     Clears the in-memory session store for a specific session,
     effectively 'unselecting' any uploaded documents.
     """
-    TempSessionStore().clear_session(session_id)
+    get_temp_store().clear_session(session_id)
     return IngestResponse(message=f"Cleared documents for session {session_id}")

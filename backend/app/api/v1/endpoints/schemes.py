@@ -26,7 +26,7 @@ class SchemeResponse(BaseModel):
     benefits: List[str]
     source_url: Optional[str] = None
     source_type: str = "Local Knowledge Base"
-    is_user_eligible: bool = True
+    eligibility_status: str = "supported"
 
 def _pre_process_text(text: str) -> str:
     """
@@ -119,7 +119,7 @@ async def get_schemes(
             cached_data = await scheme_cache.get(cache_key)
             
             if cached_data:
-                if not cached_data.get("is_valid_scheme", False) or not cached_data.get("is_user_eligible", True):
+                if not cached_data.get("is_valid_scheme", False):
                     seen_urls.add(source_url)
                     continue
                 extracted = cached_data
@@ -134,10 +134,11 @@ async def get_schemes(
                 if not extracted.get("is_valid_scheme", False):
                     seen_urls.add(source_url)
                     continue
-                is_eligible = extracted.get("is_user_eligible", True)
-                if eligible_only and not is_eligible:
-                    seen_urls.add(source_url)
-                    continue
+                    
+            status = extracted.get("eligibility_status", "insufficient_evidence")
+            if eligible_only and status not in ["supported", "partially_supported"]:
+                seen_urls.add(source_url)
+                continue
 
             match_pct = extracted.get("match_score", 85)
             
@@ -150,7 +151,7 @@ async def get_schemes(
                 benefits=extracted.get("benefits", []),
                 source_url=source_url,
                 source_type="Local Knowledge Base",
-                is_user_eligible=is_eligible,
+                eligibility_status=status,
             )
             
             schemes.append(scheme_obj)
@@ -192,7 +193,7 @@ async def get_schemes(
                 cached_data = await scheme_cache.get(cache_key)
                 
                 if cached_data:
-                    if not cached_data.get("is_valid_scheme", False) or not cached_data.get("is_user_eligible", True):
+                    if not cached_data.get("is_valid_scheme", False):
                         seen_urls.add(source_url)
                         continue
                     extracted = cached_data
@@ -207,10 +208,11 @@ async def get_schemes(
                     if not extracted.get("is_valid_scheme", False):
                         seen_urls.add(source_url)
                         continue
-                    is_eligible = extracted.get("is_user_eligible", True)
-                    if eligible_only and not is_eligible:
-                        seen_urls.add(source_url)
-                        continue
+                        
+                status = extracted.get("eligibility_status", "insufficient_evidence")
+                if eligible_only and status not in ["supported", "partially_supported"]:
+                    seen_urls.add(source_url)
+                    continue
 
                 match_pct = extracted.get("match_score", 85)
 
@@ -223,7 +225,7 @@ async def get_schemes(
                     benefits=extracted.get("benefits", []),
                     source_url=source_url,
                     source_type="Live Web",
-                    is_user_eligible=is_eligible,
+                    eligibility_status=status,
                 ))
                 seen_urls.add(source_url)
 

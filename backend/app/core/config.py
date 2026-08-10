@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Citizen Assistant"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
+    ADMIN_API_KEY: str = "dev_admin_key" # Change in production
     
     # Environment
     ENVIRONMENT: str = "development"

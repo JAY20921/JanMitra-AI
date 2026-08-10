@@ -1,38 +1,34 @@
+import logging
+from typing import Optional
 from qdrant_client import QdrantClient as QClient
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client.models import VectorParams, Distance, PayloadSchemaType
+
 from app.core.config import settings
 from app.rag.embedding import get_embedding_model, get_embedding_dimension
 
+logger = logging.getLogger(__name__)
+
 class QdrantStore:
     """
-    Singleton wrapper around Qdrant to manage collections and return Langchain VectorStore.
+    Wrapper around Qdrant to manage collections and return a Langchain VectorStore.
     """
-    _instance = None
-    
-    def __new__(cls):
-        if cls._instance is not None:
-            return cls._instance
-            
-        instance = super(QdrantStore, cls).__new__(cls)
-        try:
-            instance._initialize()
-            if instance.vector_store is not None:
-                cls._instance = instance
-        except Exception:
-            pass
-        return cls._instance or instance
+    def __init__(self):
+        self.vector_store: Optional[QdrantVectorStore] = None
+        self.client: Optional[QClient] = None
+        self.collection_name = "schemes_collection_jina"
+        self._initialize()
         
     def _initialize(self):
-        self.vector_store = None
         try:
             if not settings.QDRANT_URL:
                 raise ValueError("QDRANT_URL environment variable is missing!")
+            
             self.client = QClient(
                 url=settings.QDRANT_URL,
                 api_key=settings.QDRANT_API_KEY
             )
-            self.collection_name = "schemes_collection_jina"
+            
             # Dynamically detect the vector size from the loaded embedding model
             self.vector_size = get_embedding_dimension()
             self._ensure_collection()
@@ -46,17 +42,18 @@ class QdrantStore:
                 )
             except Exception as ve:
                 if "force_recreate" in str(ve):
-                    print("Dimension mismatch detected. Recreating Qdrant collection...")
+                    logger.warning("Dimension mismatch detected. Recreating Qdrant collection...")
                     self.vector_store = QdrantVectorStore(
                         client=self.client,
                         collection_name=self.collection_name,
                         embedding=self.embeddings,
+                        force_recreate=True
                     )
                 else:
                     raise ve
                     
         except Exception as e:
-            print(f"Warning: Failed to initialize QdrantStore: {e}")
+            logger.error("Failed to initialize QdrantStore: %s", e)
         
     def _ensure_collection(self):
         """Creates the collection if it doesn't exist."""
@@ -67,7 +64,7 @@ class QdrantStore:
             exists = False
         
         if not exists:
-            print(f"Creating Qdrant collection: {self.collection_name}")
+            logger.info("Creating Qdrant collection: %s", self.collection_name)
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(size=self.vector_size, distance=Distance.COSINE)
@@ -81,14 +78,27 @@ class QdrantStore:
                     field_name=field,
                     field_schema=PayloadSchemaType.KEYWORD
                 )
-            except Exception as e:
-                # Typically throws if it already exists or if using a free tier that limits indexes, which is fine
+            except Exception:
+                # Typically throws if it already exists or if using a free tier that limits indexes
                 pass
 
     def get_vector_store(self) -> QdrantVectorStore:
         if self.vector_store is None:
-            print("Attempting to re-initialize QdrantStore...")
+            logger.info("Attempting to re-initialize QdrantStore...")
             self._initialize()
         if self.vector_store is None:
             raise RuntimeError("QdrantStore was not successfully initialized (database may be offline).")
         return self.vector_store
+
+# Module-level singleton pattern
+_qdrant_store_instance: Optional[QdrantStore] = None
+
+def get_qdrant_store() -> QdrantStore:
+    """
+    Returns a lazily-initialized, reusable QdrantStore singleton.
+    """
+    global _qdrant_store_instance
+    if _qdrant_store_instance is None:
+        logger.info("Initializing QdrantStore singleton...")
+        _qdrant_store_instance = QdrantStore()
+    return _qdrant_store_instance

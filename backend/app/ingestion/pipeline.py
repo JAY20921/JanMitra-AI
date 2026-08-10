@@ -3,6 +3,9 @@ from typing import List
 from langchain_community.document_loaders import PyMuPDFLoader, BSHTMLLoader
 from langchain_core.documents import Document
 
+import hashlib
+from datetime import datetime
+
 class IngestionPipeline:
     """
     Orchestrates the ingestion process using LangChain Document Loaders.
@@ -23,8 +26,17 @@ class IngestionPipeline:
             print(f"Unsupported file extension: {ext} for {file_path}")
             return []
             
-        # In a real app, you would run the text through additional cleaning and metadata extraction here.
-        # But LangChain loaders already provide some sensible defaults for metadata and text extraction.
+        # Add deterministic versioning metadata
+        doc_id = hashlib.sha256(file_path.encode()).hexdigest()
+        retrieved_at = datetime.now().isoformat()
+        
+        for idx, doc in enumerate(documents):
+            content_hash = hashlib.sha256(doc.page_content.encode()).hexdigest()
+            doc.metadata["document_id"] = doc_id
+            doc.metadata["chunk_id"] = f"{doc_id}_{idx}"
+            doc.metadata["content_hash"] = content_hash
+            doc.metadata["retrieved_at"] = retrieved_at
+            doc.metadata["version"] = "1.0"
         
         return documents
         

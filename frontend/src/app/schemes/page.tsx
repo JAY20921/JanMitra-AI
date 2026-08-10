@@ -60,10 +60,16 @@ function SchemeModal({ scheme, color, onClose }: { scheme: Scheme; color: Return
                 <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>{color.icon}</span>
                 <span className="font-label-md font-bold">{scheme.match_percentage}% Match</span>
               </div>
-              {!scheme.is_user_eligible && (
+              {scheme.eligibility_status === "conflicting_evidence" && (
                 <span className="font-label-sm text-error flex items-center gap-1.5 bg-error/10 px-3 py-1.5 rounded-lg border border-error/20 shadow-elevation-1 font-bold">
                   <span className="material-symbols-outlined text-[18px]">cancel</span>
                   Ineligible
+                </span>
+              )}
+              {scheme.eligibility_status === "insufficient_evidence" && (
+                <span className="font-label-sm text-tertiary flex items-center gap-1.5 bg-saffron/10 px-3 py-1.5 rounded-lg border border-saffron/20 shadow-elevation-1 font-bold">
+                  <span className="material-symbols-outlined text-[18px]">help</span>
+                  Need More Info
                 </span>
               )}
               {scheme.source_type === "Live Web" && (
@@ -158,10 +164,16 @@ function SchemeCard({ scheme, color, onClick }: { scheme: Scheme; color: ReturnT
             <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>{color.icon}</span>
             <span className="font-label-sm text-label-sm font-bold">{scheme.match_percentage}%</span>
           </div>
-          {!scheme.is_user_eligible && (
+          {scheme.eligibility_status === "conflicting_evidence" && (
             <span className="font-label-sm text-[10px] text-error font-bold mt-1.5 flex items-center gap-0.5 bg-error/10 px-2 py-0.5 rounded-full border border-error/20">
               <span className="material-symbols-outlined text-[12px]">cancel</span>
               Ineligible
+            </span>
+          )}
+          {scheme.eligibility_status === "insufficient_evidence" && (
+            <span className="font-label-sm text-[10px] text-tertiary font-bold mt-1.5 flex items-center gap-0.5 bg-saffron/10 px-2 py-0.5 rounded-full border border-saffron/20">
+              <span className="material-symbols-outlined text-[12px]">help</span>
+              Need More Info
             </span>
           )}
           {scheme.source_type === "Live Web" && (

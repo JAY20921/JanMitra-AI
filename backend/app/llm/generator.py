@@ -6,6 +6,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.messages import get_buffer_string, HumanMessage, AIMessage
+from datetime import datetime
 from app.llm.providers import LLMFactory
 from app.llm.prompts import PromptBuilder
 from app.rag.retriever import Retriever
@@ -84,6 +85,29 @@ class Generator:
             return search_query
         return query
 
+    async def _handle_no_context(self, query: str, language: str, session_id: str) -> str:
+        fallback = _get_no_context_message(language)
+        history = get_session_history(session_id)
+        await history.aadd_messages([
+            HumanMessage(content=query),
+            AIMessage(content=fallback)
+        ])
+        return fallback
+
+    def _format_user_profile(self, user_profile: Optional[UserProfile]) -> str:
+        if not user_profile:
+            return "No profile details provided."
+        
+        parts = []
+        if user_profile.state: parts.append(f"State: {user_profile.state}")
+        if user_profile.category: parts.append(f"Category: {user_profile.category}")
+        if user_profile.age: parts.append(f"Age: {user_profile.age}")
+        if user_profile.gender: parts.append(f"Gender: {user_profile.gender}")
+        if user_profile.income: parts.append(f"Income: {user_profile.income}")
+        if user_profile.occupation: parts.append(f"Occupation: {user_profile.occupation}")
+        if user_profile.education: parts.append(f"Education: {user_profile.education}")
+        return ", ".join(parts) if parts else "No profile details provided."
+
     async def generate_response(self, query: str, user_profile: Optional[UserProfile] = None, language: str = "English", session_id: Optional[str] = None) -> str:
         session_id_val = session_id or "default"
         search_query = await self._get_search_query(query, session_id_val)
@@ -91,29 +115,14 @@ class Generator:
         context_str = await self.retriever_wrapper.retrieve_context(search_query, user_profile, session_id=session_id)
         
         if not context_str.strip():
-            # Return the fallback message in the user's selected language
-            fallback = _get_no_context_message(language)
-            history = get_session_history(session_id_val)
-            await history.aadd_messages([
-                HumanMessage(content=query),
-                AIMessage(content=fallback)
-            ])
-            return fallback
+            return await self._handle_no_context(query, language, session_id_val)
             
-        profile_str = "No profile details provided."
-        if user_profile:
-            parts = []
-            if user_profile.state: parts.append(f"State: {user_profile.state}")
-            if user_profile.category: parts.append(f"Category: {user_profile.category}")
-            if user_profile.age: parts.append(f"Age: {user_profile.age}")
-            if user_profile.gender: parts.append(f"Gender: {user_profile.gender}")
-            if user_profile.income: parts.append(f"Income: {user_profile.income}")
-            if user_profile.occupation: parts.append(f"Occupation: {user_profile.occupation}")
-            if user_profile.education: parts.append(f"Education: {user_profile.education}")
-            profile_str = ", ".join(parts) if parts else profile_str
+        profile_str = self._format_user_profile(user_profile)
+
+        current_date = datetime.now().strftime("%B %d, %Y")
 
         return await self.chain_with_history.ainvoke(
-            {"context": context_str, "query": query, "language": language, "user_profile": profile_str},
+            {"context": context_str, "query": query, "language": language, "user_profile": profile_str, "current_date": current_date},
             config={"configurable": {"session_id": session_id_val}}
         )
 
@@ -124,30 +133,16 @@ class Generator:
         context_str = await self.retriever_wrapper.retrieve_context(search_query, user_profile, session_id=session_id)
         
         if not context_str.strip():
-            # Return the fallback message in the user's selected language
-            fallback = _get_no_context_message(language)
-            history = get_session_history(session_id_val)
-            await history.aadd_messages([
-                HumanMessage(content=query),
-                AIMessage(content=fallback)
-            ])
+            fallback = await self._handle_no_context(query, language, session_id_val)
             yield fallback
             return
             
-        profile_str = "No profile details provided."
-        if user_profile:
-            parts = []
-            if user_profile.state: parts.append(f"State: {user_profile.state}")
-            if user_profile.category: parts.append(f"Category: {user_profile.category}")
-            if user_profile.age: parts.append(f"Age: {user_profile.age}")
-            if user_profile.gender: parts.append(f"Gender: {user_profile.gender}")
-            if user_profile.income: parts.append(f"Income: {user_profile.income}")
-            if user_profile.occupation: parts.append(f"Occupation: {user_profile.occupation}")
-            if user_profile.education: parts.append(f"Education: {user_profile.education}")
-            profile_str = ", ".join(parts) if parts else profile_str
+        profile_str = self._format_user_profile(user_profile)
+            
+        current_date = datetime.now().strftime("%B %d, %Y")
             
         async for chunk in self.chain_with_history.astream(
-            {"context": context_str, "query": query, "language": language, "user_profile": profile_str},
+            {"context": context_str, "query": query, "language": language, "user_profile": profile_str, "current_date": current_date},
             config={"configurable": {"session_id": session_id_val}}
         ):
             yield chunk

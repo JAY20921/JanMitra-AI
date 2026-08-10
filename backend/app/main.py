@@ -29,9 +29,10 @@ async def lifespan(app: FastAPI):
     # which takes >120s on Render free tier and causes a Gunicorn
     # WORKER TIMEOUT crash.
     try:
-        logger.info("Pre-loading Generator singleton at startup...")
+        import asyncio
+        logger.info("Pre-loading Generator singleton asynchronously at startup...")
         from app.llm.generator import get_generator
-        get_generator()
+        await asyncio.to_thread(get_generator)
         logger.info("Generator singleton ready.")
     except Exception as e:
         logger.warning("Generator pre-load failed (will retry on first request): %s", e)

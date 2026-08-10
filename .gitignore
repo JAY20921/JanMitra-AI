@@ -66,6 +66,6 @@ citizen-ai/data/processed/*
 
 # Temporary scripts and generated files
 backend/test_*.py
-backend/test_*.py
+backend/temp_uploads/
 
 implementation_plan.md
