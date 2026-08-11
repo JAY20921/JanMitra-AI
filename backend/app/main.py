@@ -9,19 +9,23 @@ from app.core.config import settings
 # Suppress Langchain deprecation warnings to keep startup logs clean
 try:
     from langchain_core._api.deprecation import LangChainDeprecationWarning
+
     warnings.filterwarnings("ignore", category=LangChainDeprecationWarning)
 except ImportError:
     pass
 
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle handler."""
     # Ensure the data directory exists for SQLite chat history
-    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+    data_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"
+    )
     os.makedirs(data_dir, exist_ok=True)
-    
+
     # Eagerly initialize the Generator singleton at startup.
     # This loads the embedding model (~200MB), connects to Qdrant, and
     # builds the LCEL chain BEFORE any user request arrives.
@@ -30,14 +34,41 @@ async def lifespan(app: FastAPI):
     # WORKER TIMEOUT crash.
     try:
         import asyncio
+
         logger.info("Pre-loading Generator singleton asynchronously at startup...")
         from app.llm.generator import get_generator
+
         await asyncio.to_thread(get_generator)
         logger.info("Generator singleton ready.")
     except Exception as e:
         logger.warning("Generator pre-load failed (will retry on first request): %s", e)
-    
+
+    # --- Active TTL cleanup for TempSessionStore ---
+    # Without this, expired in-memory sessions are only cleaned up
+    # when a *new* session is created. If the server goes idle after
+    # handling many sessions, the memory is never freed.
+    import asyncio
+
+    async def _periodic_temp_cleanup():
+        """Background loop that evicts expired temp sessions every 15 minutes."""
+        from app.rag.temp_store import get_temp_store
+
+        while True:
+            await asyncio.sleep(15 * 60)  # 15 minutes
+            try:
+                store = get_temp_store()
+                store._cleanup_expired_sessions()
+                logger.debug("Periodic TempSessionStore cleanup completed.")
+            except Exception as exc:
+                logger.warning("TempSessionStore cleanup error: %s", exc)
+
+    cleanup_task = asyncio.create_task(_periodic_temp_cleanup())
+
     yield
+
+    # Shutdown: cancel the background cleanup task
+    cleanup_task.cancel()
+
 
 def create_app() -> FastAPI:
     """
@@ -53,8 +84,12 @@ def create_app() -> FastAPI:
     )
 
     # Configure CORS - Set for development, restrict in production
-    cors_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",")] if settings.CORS_ORIGINS != "*" else ["*"]
-    
+    cors_origins = (
+        [origin.strip() for origin in settings.CORS_ORIGINS.split(",")]
+        if settings.CORS_ORIGINS != "*"
+        else ["*"]
+    )
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
@@ -72,23 +107,26 @@ def create_app() -> FastAPI:
         return {
             "status": "ok",
             "environment": settings.ENVIRONMENT,
-            "version": settings.VERSION
+            "version": settings.VERSION,
         }
 
     # Include API routers here as we build them out
     from app.api.v1.router import api_router
+
     app.include_router(api_router, prefix=settings.API_V1_STR)
 
     return app
+
 
 app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
+
     # This is primarily for local debugging
     uvicorn.run(
-        "app.main:app", 
-        host="0.0.0.0", 
-        port=8000, 
-        reload=settings.ENVIRONMENT == "development"
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=settings.ENVIRONMENT == "development",
     )

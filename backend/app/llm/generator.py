@@ -1,5 +1,6 @@
 import os
 import logging
+import threading
 from typing import AsyncGenerator, Optional, Dict
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
@@ -15,7 +16,9 @@ from app.models.user import UserProfile
 logger = logging.getLogger(__name__)
 
 # Build absolute path for the SQLite database so it works regardless of CWD
-_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_BACKEND_DIR = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 _DATA_DIR = os.path.join(_BACKEND_DIR, "data")
 os.makedirs(_DATA_DIR, exist_ok=True)
 _DB_PATH = os.path.join(_DATA_DIR, "chat_history.db")
@@ -44,21 +47,23 @@ def get_session_history(session_id: str):
     return SQLChatMessageHistory(
         session_id=session_id,
         connection=f"sqlite+aiosqlite:///{_DB_PATH.replace(os.sep, '/')}",
-        async_mode=True
+        async_mode=True,
     )
+
 
 class Generator:
     """
-    Uses LangChain Expression Language (LCEL) to combine the PromptBuilder, 
+    Uses LangChain Expression Language (LCEL) to combine the PromptBuilder,
     LLM Provider, and retriever to generate or stream the final response.
     """
+
     def __init__(self, provider_name: str = "groq", model_name: str = None):
         self.llm = LLMFactory.get_provider(provider_name, model_name)
         self.retriever_wrapper = Retriever()
         self.prompt = PromptBuilder.get_rag_prompt()
         self.rephrase_prompt = PromptBuilder.get_rephrase_prompt()
         self.output_parser = StrOutputParser()
-        
+
         # Wrapped main chain with memory
         chain = self.prompt | self.llm | self.output_parser
         self.chain_with_history = RunnableWithMessageHistory(
@@ -74,76 +79,111 @@ class Generator:
             msgs = await history.aget_messages()
         except Exception:
             msgs = []
-            
+
         if len(msgs) > 0:
             rephrase_chain = self.rephrase_prompt | self.llm | self.output_parser
-            search_query = await rephrase_chain.ainvoke({
-                "chat_history": get_buffer_string(msgs[-6:]),
-                "query": query
-            })
+            search_query = await rephrase_chain.ainvoke(
+                {"chat_history": get_buffer_string(msgs[-6:]), "query": query}
+            )
             logger.info("Rephrased Query: %s", search_query)
             return search_query
         return query
 
-    async def _handle_no_context(self, query: str, language: str, session_id: str) -> str:
+    async def _handle_no_context(
+        self, query: str, language: str, session_id: str
+    ) -> str:
         fallback = _get_no_context_message(language)
         history = get_session_history(session_id)
-        await history.aadd_messages([
-            HumanMessage(content=query),
-            AIMessage(content=fallback)
-        ])
+        await history.aadd_messages(
+            [HumanMessage(content=query), AIMessage(content=fallback)]
+        )
         return fallback
 
     def _format_user_profile(self, user_profile: Optional[UserProfile]) -> str:
         if not user_profile:
             return "No profile details provided."
-        
+
         parts = []
-        if user_profile.state: parts.append(f"State: {user_profile.state}")
-        if user_profile.category: parts.append(f"Category: {user_profile.category}")
-        if user_profile.age: parts.append(f"Age: {user_profile.age}")
-        if user_profile.gender: parts.append(f"Gender: {user_profile.gender}")
-        if user_profile.income: parts.append(f"Income: {user_profile.income}")
-        if user_profile.occupation: parts.append(f"Occupation: {user_profile.occupation}")
-        if user_profile.education: parts.append(f"Education: {user_profile.education}")
+        if user_profile.state:
+            parts.append(f"State: {user_profile.state}")
+        if user_profile.category:
+            parts.append(f"Category: {user_profile.category}")
+        if user_profile.age:
+            parts.append(f"Age: {user_profile.age}")
+        if user_profile.gender:
+            parts.append(f"Gender: {user_profile.gender}")
+        if user_profile.income:
+            parts.append(f"Income: {user_profile.income}")
+        if user_profile.occupation:
+            parts.append(f"Occupation: {user_profile.occupation}")
+        if user_profile.education:
+            parts.append(f"Education: {user_profile.education}")
         return ", ".join(parts) if parts else "No profile details provided."
 
-    async def generate_response(self, query: str, user_profile: Optional[UserProfile] = None, language: str = "English", session_id: Optional[str] = None) -> str:
+    async def generate_response(
+        self,
+        query: str,
+        user_profile: Optional[UserProfile] = None,
+        language: str = "English",
+        session_id: Optional[str] = None,
+    ) -> str:
         session_id_val = session_id or "default"
         search_query = await self._get_search_query(query, session_id_val)
-        
-        context_str = await self.retriever_wrapper.retrieve_context(search_query, user_profile, session_id=session_id)
-        
+
+        context_str = await self.retriever_wrapper.retrieve_context(
+            search_query, user_profile, session_id=session_id
+        )
+
         if not context_str.strip():
             return await self._handle_no_context(query, language, session_id_val)
-            
+
         profile_str = self._format_user_profile(user_profile)
 
         current_date = datetime.now().strftime("%B %d, %Y")
 
         return await self.chain_with_history.ainvoke(
-            {"context": context_str, "query": query, "language": language, "user_profile": profile_str, "current_date": current_date},
-            config={"configurable": {"session_id": session_id_val}}
+            {
+                "context": context_str,
+                "query": query,
+                "language": language,
+                "user_profile": profile_str,
+                "current_date": current_date,
+            },
+            config={"configurable": {"session_id": session_id_val}},
         )
 
-    async def stream_response(self, query: str, user_profile: Optional[UserProfile] = None, language: str = "English", session_id: Optional[str] = None) -> AsyncGenerator[str, None]:
+    async def stream_response(
+        self,
+        query: str,
+        user_profile: Optional[UserProfile] = None,
+        language: str = "English",
+        session_id: Optional[str] = None,
+    ) -> AsyncGenerator[str, None]:
         session_id_val = session_id or "default"
         search_query = await self._get_search_query(query, session_id_val)
-        
-        context_str = await self.retriever_wrapper.retrieve_context(search_query, user_profile, session_id=session_id)
-        
+
+        context_str = await self.retriever_wrapper.retrieve_context(
+            search_query, user_profile, session_id=session_id
+        )
+
         if not context_str.strip():
             fallback = await self._handle_no_context(query, language, session_id_val)
             yield fallback
             return
-            
+
         profile_str = self._format_user_profile(user_profile)
-            
+
         current_date = datetime.now().strftime("%B %d, %Y")
-            
+
         async for chunk in self.chain_with_history.astream(
-            {"context": context_str, "query": query, "language": language, "user_profile": profile_str, "current_date": current_date},
-            config={"configurable": {"session_id": session_id_val}}
+            {
+                "context": context_str,
+                "query": query,
+                "language": language,
+                "user_profile": profile_str,
+                "current_date": current_date,
+            },
+            config={"configurable": {"session_id": session_id_val}},
         ):
             yield chunk
 
@@ -154,6 +194,7 @@ class Generator:
 # This is critical for Render free tier where cold-start latency matters.
 # ---------------------------------------------------------------------------
 _generator_instance: Optional[Generator] = None
+_generator_lock = threading.Lock()
 
 
 def get_generator(provider_name: str = "groq", model_name: str = None) -> Generator:
@@ -163,7 +204,12 @@ def get_generator(provider_name: str = "groq", model_name: str = None) -> Genera
     """
     global _generator_instance
     if _generator_instance is None:
-        logger.info("Initializing Generator singleton (provider=%s)...", provider_name)
-        _generator_instance = Generator(provider_name=provider_name, model_name=model_name)
+        with _generator_lock:
+            if _generator_instance is None:
+                logger.info(
+                    "Initializing Generator singleton (provider=%s)...", provider_name
+                )
+                _generator_instance = Generator(
+                    provider_name=provider_name, model_name=model_name
+                )
     return _generator_instance
-

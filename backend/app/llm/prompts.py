@@ -1,11 +1,12 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
+
 class PromptBuilder:
     """
-    Constructs strict prompts that enforce the "no hallucination" rule 
+    Constructs strict prompts that enforce the "no hallucination" rule
     and demand inline citations using LangChain ChatPromptTemplate.
     """
-    
+
     SYSTEM_TEMPLATE = """You are JanMitra AI, a friendly and highly reliable assistant designed to help Indian citizens discover government welfare schemes.
 
 <system_instructions>
@@ -57,11 +58,13 @@ Source Text:
 
     @staticmethod
     def get_rag_prompt() -> ChatPromptTemplate:
-        return ChatPromptTemplate.from_messages([
-            ("system", PromptBuilder.SYSTEM_TEMPLATE),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("human", "{query}")
-        ])
+        return ChatPromptTemplate.from_messages(
+            [
+                ("system", PromptBuilder.SYSTEM_TEMPLATE),
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("human", "{query}"),
+            ]
+        )
 
     @staticmethod
     def get_rephrase_prompt() -> ChatPromptTemplate:

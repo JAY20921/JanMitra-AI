@@ -2,9 +2,10 @@ from typing import Dict, Any, Optional, List
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from app.models.user import UserProfile
 
-# Catch-all values used by Central/universal schemes in the knowledge base
-_CENTRAL_STATE_VALUES = ["All", "Central", "all", "central"]
-_GENERAL_CATEGORY_VALUES = ["All", "General", "all", "general"]
+# Catch-all values used by Central/universal schemes in the knowledge base.
+# Multiple casings are included because ingested metadata may not be normalised.
+_CENTRAL_STATE_VALUES = ["All", "Central", "all", "central", "ALL", "CENTRAL"]
+_GENERAL_CATEGORY_VALUES = ["All", "General", "all", "general", "ALL", "GENERAL"]
 
 
 class MetadataFilter:
